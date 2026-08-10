@@ -27,6 +27,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         loading: true,
         error: null,
     });
+    const [hideNoComment, setHideNoComment] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -66,6 +67,11 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     }
 
     const marked = isMarked(url);
+    const bookmarks = hideNoComment
+        ? state.data.bookmarks.filter(
+              (bookmark) => bookmark.comment.trim() !== "",
+          )
+        : state.data.bookmarks;
 
     return (
         <div className="mx-auto max-w-2xl p-4">
@@ -89,7 +95,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                     あとで読む
                 </button>
             </div>
-            <p className="mt-1 text-gray-500 text-sm">
+            <p className="mt-1 font-bold text-rose-500 text-sm dark:text-rose-400">
                 {state.data.count} users
             </p>
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
@@ -112,8 +118,17 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                     <ExternalLink className="size-4" />
                 </a>
             </div>
+            <label className="mt-3 flex items-center gap-1.5 text-sm">
+                <input
+                    type="checkbox"
+                    checked={hideNoComment}
+                    onChange={(event) => setHideNoComment(event.target.checked)}
+                    className="size-4"
+                />
+                コメントのない人を隠す
+            </label>
             <div className="mt-4">
-                <BookmarkList bookmarks={state.data.bookmarks} />
+                <BookmarkList bookmarks={bookmarks} />
             </div>
         </div>
     );
