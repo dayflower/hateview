@@ -1,0 +1,77 @@
+{
+    "generatedAt": "2026-08-10T03:00:00.000Z",
+    "entries": [
+        {
+            "url": "https://example.com/articles/rust-async-runtime",
+            "title": "Rust の非同期ランタイムを比較してみた",
+            "description": "tokio, async-std, smol の3つの非同期ランタイムについて、パフォーマンスとAPIの使いやすさを比較検証した記事。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 342,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/example.com/articles/rust-async-runtime",
+            "date": "2026-08-10T01:00:00+09:00",
+            "tags": ["Rust", "非同期"],
+            "categories": ["it"],
+            "rank": 1
+        },
+        {
+            "url": "https://news.example.jp/politics/budget-2026",
+            "title": "2026年度予算案が閣議決定 過去最大規模に",
+            "description": "政府は2026年度予算案を閣議決定した。社会保障費の増加を背景に過去最大の規模となった。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 210,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/news.example.jp/politics/budget-2026",
+            "date": "2026-08-09T22:00:00+09:00",
+            "tags": ["政治", "予算"],
+            "categories": ["general"],
+            "rank": 2
+        },
+        {
+            "url": "https://blog.example.dev/react-19-tips",
+            "title": "React 19 で変わったこと・便利になったフック",
+            "description": "React 19 の新機能を実際のプロジェクトで使ってみた所感と、移行時にハマったポイントをまとめた。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 512,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/blog.example.dev/react-19-tips",
+            "date": "2026-08-10T00:30:00+09:00",
+            "tags": ["React", "フロントエンド"],
+            "categories": ["it"],
+            "rank": 3
+        },
+        {
+            "url": "https://shonenjumpplus.com/episode/sample-manga-123",
+            "title": "サンプル漫画 第123話",
+            "description": "少年ジャンプ+で連載中のサンプル漫画最新話。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 890,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/shonenjumpplus.com/episode/sample-manga-123",
+            "date": "2026-08-09T20:00:00+09:00",
+            "tags": ["漫画"],
+            "categories": ["general"],
+            "rank": 4
+        },
+        {
+            "url": "https://cooking.example.org/recipes/summer-salad",
+            "title": "暑い日にぴったりの夏野菜サラダレシピ5選",
+            "description": "旬の夏野菜を使った、火を使わずに作れる簡単サラダレシピをまとめました。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 128,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/cooking.example.org/recipes/summer-salad",
+            "date": "2026-08-09T18:00:00+09:00",
+            "tags": ["料理", "レシピ"],
+            "categories": [],
+            "rank": 5
+        },
+        {
+            "url": "https://tech.example.io/webassembly-2026",
+            "title": "2026年、WebAssembly はどこまで来たか",
+            "description": "WASI Preview 2 やコンポーネントモデルなど、この1年のWebAssemblyエコシステムの進化を振り返る。",
+            "imageUrl": "https://placehold.jp/150x150.png",
+            "bookmarkCount": 267,
+            "bookmarkCommentPageUrl": "https://b.hatena.ne.jp/entry/s/tech.example.io/webassembly-2026",
+            "date": "2026-08-09T15:00:00+09:00",
+            "tags": ["WebAssembly"],
+            "categories": ["it"],
+            "rank": 6
+        }
+    ]
+}
