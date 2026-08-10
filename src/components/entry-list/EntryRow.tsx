@@ -136,7 +136,7 @@ export function EntryRow({
                         {isNew && <NewBadge />}
                     </div>
                 </div>
-                <div className="flex w-full justify-end gap-1 sm:w-auto">
+                <div className="flex w-full justify-end gap-1 sm:w-auto sm:flex-col">
                     <IconButton
                         aria-label={
                             marked ? "あとで読むから外す" : "あとで読むに追加"
