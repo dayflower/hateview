@@ -2,10 +2,12 @@ import { useMemo, useState } from "react";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
 import { useEntries } from "../lib/hooks/useEntries";
+import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import type { CategoryId } from "../types/entry";
 
 export function EntryListPage() {
     const { entries, loading, error } = useEntries();
+    const { isHidden } = useHideRules();
     const [selectedCategories, setSelectedCategories] = useState<
         Set<CategoryId>
     >(() => new Set());
@@ -23,15 +25,16 @@ export function EntryListPage() {
     };
 
     const visibleEntries = useMemo(() => {
-        if (selectedCategories.size === 0) {
-            return entries;
-        }
-        return entries.filter((entry) =>
-            entry.categories.some((category) =>
-                selectedCategories.has(category),
-            ),
-        );
-    }, [entries, selectedCategories]);
+        return entries
+            .filter(
+                (entry) =>
+                    selectedCategories.size === 0 ||
+                    entry.categories.some((category) =>
+                        selectedCategories.has(category),
+                    ),
+            )
+            .filter((entry) => !isHidden(entry));
+    }, [entries, selectedCategories, isHidden]);
 
     if (loading) {
         return <p className="p-4 text-gray-500">読み込み中...</p>;

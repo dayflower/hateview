@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadTrackingProvider } from "./lib/hooks/useReadTracking.tsx";
 import "./styles/index.css";
 
@@ -8,7 +9,9 @@ import "./styles/index.css";
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ReadTrackingProvider>
-            <App />
+            <HideRulesProvider>
+                <App />
+            </HideRulesProvider>
         </ReadTrackingProvider>
     </StrictMode>,
 );
