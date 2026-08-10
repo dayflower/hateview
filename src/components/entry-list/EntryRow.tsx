@@ -1,9 +1,9 @@
 import { Bookmark, BookmarkCheck, ExternalLink, Trash2 } from "lucide-react";
-import type { MouseEvent } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../../lib/hooks/useRemovedEntries.tsx";
-import { useSwipeToDelete } from "../../lib/hooks/useSwipeToDelete";
+import { useRowRemoval } from "../../lib/hooks/useRowRemoval";
 import { entryPath } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
@@ -12,6 +12,8 @@ import { FaviconImg } from "../common/FaviconImg";
 import { IconButton, iconButtonClass } from "../common/IconButton";
 import { RelativeTime } from "../common/RelativeTime";
 import { Thumbnail } from "../common/Thumbnail";
+
+const CONFIRM_TIMEOUT_MS = 3000;
 
 interface EntryRowProps {
     entry: Entry;
@@ -27,10 +29,25 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
     const read = isRead(entry.url);
     const marked = isMarked(entry.url);
 
-    const { dragX, dragging, removing, wasDragged, handlers } =
-        useSwipeToDelete({
-            onDelete: () => removeEntry(entry.url),
-        });
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const confirmTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+        undefined,
+    );
+
+    useEffect(() => () => clearTimeout(confirmTimeoutRef.current), []);
+
+    const {
+        liRef,
+        liStyle,
+        dragX,
+        dragging,
+        removing,
+        wasDragged,
+        dragHandlers,
+        triggerRemoval,
+    } = useRowRemoval({
+        onRemove: () => removeEntry(entry.url),
+    });
 
     const handleCardClick = () => {
         if (wasDragged()) {
@@ -41,9 +58,29 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
 
     const stop = (event: MouseEvent) => event.stopPropagation();
 
+    const handleTrashClick = (event: MouseEvent) => {
+        stop(event);
+        if (confirmingDelete) {
+            clearTimeout(confirmTimeoutRef.current);
+            triggerRemoval();
+            return;
+        }
+        setConfirmingDelete(true);
+        confirmTimeoutRef.current = setTimeout(
+            () => setConfirmingDelete(false),
+            CONFIRM_TIMEOUT_MS,
+        );
+    };
+
+    const setLiRef = (el: HTMLLIElement | null) => {
+        liRef(el);
+        itemRef?.(el);
+    };
+
     return (
         <li
-            ref={itemRef}
+            ref={setLiRef}
+            style={liStyle}
             className="relative overflow-hidden border-gray-200 border-b dark:border-gray-800"
         >
             <div
@@ -55,7 +92,7 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
             {/* biome-ignore lint/a11y/noStaticElementInteractions: the title button above provides an equivalent keyboard/screen-reader accessible action; this is a mouse/touch convenience layer */}
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: same as above */}
             <div
-                {...handlers}
+                {...dragHandlers}
                 onClick={handleCardClick}
                 style={{
                     transform: `translateX(${dragX}px)`,
@@ -126,11 +163,17 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
                         <ExternalLink className="size-5" />
                     </a>
                     <IconButton
-                        aria-label="このエントリーを削除"
-                        onClick={(event) => {
-                            stop(event);
-                            removeEntry(entry.url);
-                        }}
+                        aria-label={
+                            confirmingDelete
+                                ? "もう一度クリックして削除を確定"
+                                : "このエントリーを削除"
+                        }
+                        onClick={handleTrashClick}
+                        className={
+                            confirmingDelete
+                                ? "!bg-red-500 !text-white hover:!bg-red-600"
+                                : ""
+                        }
                     >
                         <Trash2 className="size-5" />
                     </IconButton>
