@@ -1,4 +1,5 @@
 import { ExternalLink } from "lucide-react";
+import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { entryPath } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
@@ -12,10 +13,16 @@ interface EntryRowProps {
 }
 
 export function EntryRow({ entry }: EntryRowProps) {
+    const { isRead } = useReadTracking();
     const domain = new URL(entry.url).hostname;
+    const read = isRead(entry.url);
 
     return (
-        <li className="flex gap-3 border-gray-200 border-b py-3 dark:border-gray-800">
+        <li
+            className={`flex gap-3 border-gray-200 border-b py-3 dark:border-gray-800 ${
+                read ? "opacity-50" : ""
+            }`}
+        >
             {entry.imageUrl && (
                 <img
                     src={entry.imageUrl}

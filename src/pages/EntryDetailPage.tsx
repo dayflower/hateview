@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
+import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import {
     bookmarkEntryPageUrl,
     fetchEntryJsonlite,
@@ -18,6 +19,7 @@ interface DetailState {
 }
 
 export function EntryDetailPage({ url }: EntryDetailPageProps) {
+    const { markRead } = useReadTracking();
     const [state, setState] = useState<DetailState>({
         data: null,
         loading: true,
@@ -32,6 +34,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             .then((data) => {
                 if (!cancelled) {
                     setState({ data, loading: false, error: null });
+                    markRead(url);
                 }
             })
             .catch((err: unknown) => {
@@ -47,7 +50,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         return () => {
             cancelled = true;
         };
-    }, [url]);
+    }, [url, markRead]);
 
     if (state.loading) {
         return <p className="p-4 text-gray-500">読み込み中...</p>;
