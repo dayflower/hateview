@@ -1,34 +1,42 @@
 import type { CategoryId } from "../../types/entry";
 
-export const CATEGORIES: { id: CategoryId; label: string }[] = [
-    { id: "it", label: "IT" },
+export type CategoryFilter = "all" | CategoryId;
+
+export const CATEGORY_FILTERS: { id: CategoryFilter; label: string }[] = [
+    { id: "all", label: "総合" },
     { id: "general", label: "一般" },
+    { id: "it", label: "IT" },
 ];
 
 interface CategoryFilterBarProps {
-    selected: Set<CategoryId>;
-    onToggle: (category: CategoryId) => void;
+    selected: CategoryFilter;
+    onSelect: (category: CategoryFilter) => void;
 }
 
 export function CategoryFilterBar({
     selected,
-    onToggle,
+    onSelect,
 }: CategoryFilterBarProps) {
     return (
-        <div className="flex flex-wrap gap-4 py-2">
-            {CATEGORIES.map((category) => (
-                <label
+        <div
+            role="tablist"
+            className="inline-flex gap-1 rounded-full border border-gray-300 p-1 dark:border-gray-700"
+        >
+            {CATEGORY_FILTERS.map((category) => (
+                <button
                     key={category.id}
-                    className="flex items-center gap-1.5 text-sm"
+                    type="button"
+                    role="tab"
+                    aria-selected={selected === category.id}
+                    onClick={() => onSelect(category.id)}
+                    className={`rounded-full px-3 py-1 text-sm ${
+                        selected === category.id
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                    }`}
                 >
-                    <input
-                        type="checkbox"
-                        checked={selected.has(category.id)}
-                        onChange={() => onToggle(category.id)}
-                        className="size-4"
-                    />
                     {category.label}
-                </label>
+                </button>
             ))}
         </div>
     );

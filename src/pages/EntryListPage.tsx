@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { CategoryFilter } from "../components/entry-list/CategoryFilterBar";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
 import { useEntries } from "../lib/hooks/useEntries";
@@ -7,28 +8,18 @@ import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
 import { useRemovedEntries } from "../lib/hooks/useRemovedEntries.tsx";
 import { entryPath } from "../router/routes";
 import { navigate } from "../router/useHashRoute";
-import type { CategoryId } from "../types/entry";
 
 export function EntryListPage() {
     const { entries, newUrls, loading, error } = useEntries();
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
-    const [selectedCategories, setSelectedCategories] = useState<
-        Set<CategoryId>
-    >(() => new Set());
+    const [selectedCategory, setSelectedCategory] =
+        useState<CategoryFilter>("all");
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
-    const toggleCategory = (category: CategoryId) => {
-        setSelectedCategories((prev) => {
-            const next = new Set(prev);
-            if (next.has(category)) {
-                next.delete(category);
-            } else {
-                next.add(category);
-            }
-            return next;
-        });
+    const selectCategory = (category: CategoryFilter) => {
+        setSelectedCategory(category);
         setFocusedIndex(-1);
     };
 
@@ -39,10 +30,8 @@ export function EntryListPage() {
     const visibleEntries = entries
         .filter(
             (entry) =>
-                selectedCategories.size === 0 ||
-                entry.categories.some((category) =>
-                    selectedCategories.has(category),
-                ),
+                selectedCategory === "all" ||
+                entry.categories.includes(selectedCategory),
         )
         .filter((entry) => !isHidden(entry))
         .filter((entry) => !isRemoved(entry.url));
@@ -81,8 +70,8 @@ export function EntryListPage() {
     return (
         <div className="mx-auto max-w-2xl p-4">
             <CategoryFilterBar
-                selected={selectedCategories}
-                onToggle={toggleCategory}
+                selected={selectedCategory}
+                onSelect={selectCategory}
             />
             <ul>
                 {visibleEntries.map((entry, index) => (
