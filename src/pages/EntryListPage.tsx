@@ -10,7 +10,7 @@ import { navigate } from "../router/useHashRoute";
 import type { CategoryId } from "../types/entry";
 
 export function EntryListPage() {
-    const { entries, loading, error } = useEntries();
+    const { entries, newUrls, loading, error } = useEntries();
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
     const [selectedCategories, setSelectedCategories] = useState<
@@ -90,6 +90,7 @@ export function EntryListPage() {
                         key={entry.url}
                         entry={entry}
                         focused={index === focusedIndex}
+                        isNew={newUrls.has(entry.url)}
                         itemRef={(el) => {
                             itemRefs.current[index] = el;
                         }}

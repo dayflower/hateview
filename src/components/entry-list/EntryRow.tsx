@@ -10,6 +10,7 @@ import type { Entry } from "../../types/entry";
 import { CategoryBadge } from "../common/CategoryBadge";
 import { FaviconImg } from "../common/FaviconImg";
 import { IconButton, iconButtonClass } from "../common/IconButton";
+import { NewBadge } from "../common/NewBadge";
 import { RelativeTime } from "../common/RelativeTime";
 import { Thumbnail } from "../common/Thumbnail";
 
@@ -18,10 +19,16 @@ const CONFIRM_TIMEOUT_MS = 3000;
 interface EntryRowProps {
     entry: Entry;
     focused?: boolean;
+    isNew?: boolean;
     itemRef?: (el: HTMLLIElement | null) => void;
 }
 
-export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
+export function EntryRow({
+    entry,
+    focused = false,
+    isNew = false,
+    itemRef,
+}: EntryRowProps) {
     const { isRead } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
     const { removeEntry } = useRemovedEntries();
@@ -106,13 +113,16 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
             >
                 <Thumbnail src={entry.imageUrl} />
                 <div className="min-w-0 flex-1">
-                    <button
-                        type="button"
-                        onClick={() => navigate(entryPath(entry.url))}
-                        className="block text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
-                    >
-                        {entry.title}
-                    </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        {isNew && <NewBadge />}
+                        <button
+                            type="button"
+                            onClick={() => navigate(entryPath(entry.url))}
+                            className="text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
+                        >
+                            {entry.title}
+                        </button>
+                    </div>
                     {entry.description && (
                         <p className="mt-1 line-clamp-2 text-gray-500 text-sm dark:text-gray-400">
                             {entry.description}

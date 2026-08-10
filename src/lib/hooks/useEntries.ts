@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import type { Entry } from "../../types/entry";
+import {
+    markFetchAndGetNewUrls,
+    pruneOldSeenRecords,
+} from "../storage/seenEntries";
 
 interface EntriesState {
     entries: Entry[];
+    newUrls: Set<string>;
     loading: boolean;
     error: string | null;
 }
 
-let cache: Entry[] | null = null;
+let cache: { entries: Entry[]; newUrls: Set<string> } | null = null;
 
 export function useEntries(): EntriesState {
     const [state, setState] = useState<EntriesState>(() =>
         cache
-            ? { entries: cache, loading: false, error: null }
-            : { entries: [], loading: true, error: null },
+            ? { ...cache, loading: false, error: null }
+            : { entries: [], newUrls: new Set(), loading: true, error: null },
     );
 
     useEffect(() => {
@@ -21,6 +26,7 @@ export function useEntries(): EntriesState {
             return;
         }
         let cancelled = false;
+        pruneOldSeenRecords();
         fetch(`${import.meta.env.BASE_URL}entries.json`)
             .then((res) => {
                 if (!res.ok) {
@@ -32,9 +38,13 @@ export function useEntries(): EntriesState {
                 if (cancelled) {
                     return;
                 }
-                cache = data.entries;
+                const newUrls = markFetchAndGetNewUrls(
+                    data.entries.map((entry) => entry.url),
+                );
+                cache = { entries: data.entries, newUrls };
                 setState({
                     entries: data.entries,
+                    newUrls,
                     loading: false,
                     error: null,
                 });
@@ -45,6 +55,7 @@ export function useEntries(): EntriesState {
                 }
                 setState({
                     entries: [],
+                    newUrls: new Set(),
                     loading: false,
                     error: err instanceof Error ? err.message : String(err),
                 });
