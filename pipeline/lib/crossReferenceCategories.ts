@@ -1,4 +1,4 @@
-import type { CategoryId, Entry, RawFeedItem } from "./types";
+import type { CategoryId, Entry, RawFeedItem } from "./types.ts";
 
 export interface CategoryFeedItems {
     id: CategoryId;

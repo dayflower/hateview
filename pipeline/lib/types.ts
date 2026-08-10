@@ -1,4 +1,4 @@
-import type { CategoryId, EntriesFile, Entry } from "../../src/types/entry";
+import type { CategoryId, EntriesFile, Entry } from "../../src/types/entry.ts";
 
 export type { CategoryId, EntriesFile, Entry };
 

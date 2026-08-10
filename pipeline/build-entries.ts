@@ -1,8 +1,8 @@
 import { writeFileSync } from "node:fs";
-import { crossReferenceCategories } from "./lib/crossReferenceCategories";
-import { fetchFeed } from "./lib/fetchHotEntries";
-import { parseHotEntryRss } from "./lib/parseRdf";
-import type { CategoryFeed, EntriesFile } from "./lib/types";
+import { crossReferenceCategories } from "./lib/crossReferenceCategories.ts";
+import { fetchFeed } from "./lib/fetchHotEntries.ts";
+import { parseHotEntryRss } from "./lib/parseRdf.ts";
+import type { CategoryFeed, EntriesFile } from "./lib/types.ts";
 
 const ALL_FEED_URL = "https://b.hatena.ne.jp/hotentry/all.rss";
 

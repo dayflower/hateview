@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { RawFeedItem } from "./types";
+import type { RawFeedItem } from "./types.ts";
 
 interface RdfLi {
     "@_rdf:resource"?: string;
