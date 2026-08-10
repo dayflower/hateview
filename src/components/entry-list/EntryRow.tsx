@@ -113,16 +113,13 @@ export function EntryRow({
             >
                 <Thumbnail src={entry.imageUrl} />
                 <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        {isNew && <NewBadge />}
-                        <button
-                            type="button"
-                            onClick={() => navigate(entryPath(entry.url))}
-                            className="text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
-                        >
-                            {entry.title}
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => navigate(entryPath(entry.url))}
+                        className="block text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
+                    >
+                        {entry.title}
+                    </button>
                     {entry.description && (
                         <p className="mt-1 line-clamp-2 text-gray-500 text-sm dark:text-gray-400">
                             {entry.description}
@@ -136,6 +133,7 @@ export function EntryRow({
                             <CategoryBadge key={category} category={category} />
                         ))}
                         <RelativeTime date={entry.date} />
+                        {isNew && <NewBadge />}
                     </div>
                 </div>
                 <div className="flex w-full justify-end gap-1 sm:w-auto">
