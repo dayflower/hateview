@@ -25,7 +25,7 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
     return (
         <li
             ref={itemRef}
-            className={`flex gap-3 border-gray-200 border-b py-3 dark:border-gray-800 ${
+            className={`flex flex-wrap items-start gap-3 border-gray-200 border-b py-3 dark:border-gray-800 ${
                 read ? "opacity-50" : ""
             } ${focused ? "ring-2 ring-blue-500 ring-inset" : ""}`}
         >
@@ -60,35 +60,39 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
                     <RelativeTime date={entry.date} />
                 </div>
             </div>
-            <IconButton
-                aria-label={marked ? "あとで読むから外す" : "あとで読むに追加"}
-                onClick={() =>
-                    toggle({
-                        url: entry.url,
-                        title: entry.title,
-                        description: entry.description,
-                        imageUrl: entry.imageUrl,
-                        bookmarkCount: entry.bookmarkCount,
-                        categories: entry.categories,
-                        tags: entry.tags,
-                    })
-                }
-            >
-                {marked ? (
-                    <BookmarkCheck className="size-5 text-blue-600 dark:text-blue-400" />
-                ) : (
-                    <Bookmark className="size-5" />
-                )}
-            </IconButton>
-            <a
-                href={entry.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="元記事を開く"
-                className={iconButtonClass}
-            >
-                <ExternalLink className="size-5" />
-            </a>
+            <div className="flex w-full justify-end gap-1 sm:w-auto">
+                <IconButton
+                    aria-label={
+                        marked ? "あとで読むから外す" : "あとで読むに追加"
+                    }
+                    onClick={() =>
+                        toggle({
+                            url: entry.url,
+                            title: entry.title,
+                            description: entry.description,
+                            imageUrl: entry.imageUrl,
+                            bookmarkCount: entry.bookmarkCount,
+                            categories: entry.categories,
+                            tags: entry.tags,
+                        })
+                    }
+                >
+                    {marked ? (
+                        <BookmarkCheck className="size-5 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                        <Bookmark className="size-5" />
+                    )}
+                </IconButton>
+                <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="元記事を開く"
+                    className={iconButtonClass}
+                >
+                    <ExternalLink className="size-5" />
+                </a>
+            </div>
         </li>
     );
 }

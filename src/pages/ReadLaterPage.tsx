@@ -24,7 +24,7 @@ export function ReadLaterPage() {
                 {entries.map((entry) => (
                     <li
                         key={entry.url}
-                        className="flex gap-3 border-gray-200 border-b py-3 dark:border-gray-800"
+                        className="flex flex-wrap items-start gap-3 border-gray-200 border-b py-3 dark:border-gray-800"
                     >
                         {entry.imageUrl && (
                             <img
@@ -59,23 +59,25 @@ export function ReadLaterPage() {
                                 ))}
                             </div>
                         </div>
-                        <a
-                            href={entry.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="元記事を開く"
-                            className={iconButtonClass}
-                        >
-                            <ExternalLink className="size-5" />
-                        </a>
-                        <button
-                            type="button"
-                            aria-label="あとで読むから外す"
-                            onClick={() => remove(entry.url)}
-                            className={iconButtonClass}
-                        >
-                            <X className="size-5" />
-                        </button>
+                        <div className="flex w-full justify-end gap-1 sm:w-auto">
+                            <a
+                                href={entry.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label="元記事を開く"
+                                className={iconButtonClass}
+                            >
+                                <ExternalLink className="size-5" />
+                            </a>
+                            <button
+                                type="button"
+                                aria-label="あとで読むから外す"
+                                onClick={() => remove(entry.url)}
+                                className={iconButtonClass}
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
                     </li>
                 ))}
             </ul>
