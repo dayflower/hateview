@@ -11,9 +11,11 @@ import { RelativeTime } from "../common/RelativeTime";
 
 interface EntryRowProps {
     entry: Entry;
+    focused?: boolean;
+    itemRef?: (el: HTMLLIElement | null) => void;
 }
 
-export function EntryRow({ entry }: EntryRowProps) {
+export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
     const { isRead } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
     const domain = new URL(entry.url).hostname;
@@ -22,9 +24,10 @@ export function EntryRow({ entry }: EntryRowProps) {
 
     return (
         <li
+            ref={itemRef}
             className={`flex gap-3 border-gray-200 border-b py-3 dark:border-gray-800 ${
                 read ? "opacity-50" : ""
-            }`}
+            } ${focused ? "ring-2 ring-blue-500 ring-inset" : ""}`}
         >
             {entry.imageUrl && (
                 <img

@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
 import { useEntries } from "../lib/hooks/useEntries";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
+import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
+import { entryPath } from "../router/routes";
+import { navigate } from "../router/useHashRoute";
 import type { CategoryId } from "../types/entry";
 
 export function EntryListPage() {
@@ -11,6 +14,8 @@ export function EntryListPage() {
     const [selectedCategories, setSelectedCategories] = useState<
         Set<CategoryId>
     >(() => new Set());
+    const [focusedIndex, setFocusedIndex] = useState(-1);
+    const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
     const toggleCategory = (category: CategoryId) => {
         setSelectedCategories((prev) => {
@@ -22,6 +27,7 @@ export function EntryListPage() {
             }
             return next;
         });
+        setFocusedIndex(-1);
     };
 
     const visibleEntries = useMemo(() => {
@@ -35,6 +41,31 @@ export function EntryListPage() {
             )
             .filter((entry) => !isHidden(entry));
     }, [entries, selectedCategories, isHidden]);
+
+    useEffect(() => {
+        if (focusedIndex >= 0) {
+            itemRefs.current[focusedIndex]?.scrollIntoView({
+                block: "nearest",
+            });
+        }
+    }, [focusedIndex]);
+
+    const handleSelect = useCallback(
+        (index: number) => {
+            const entry = visibleEntries[index];
+            if (entry) {
+                navigate(entryPath(entry.url));
+            }
+        },
+        [visibleEntries],
+    );
+
+    useKeyboardNav({
+        itemCount: visibleEntries.length,
+        focusedIndex,
+        onMove: setFocusedIndex,
+        onSelect: handleSelect,
+    });
 
     if (loading) {
         return <p className="p-4 text-gray-500">読み込み中...</p>;
@@ -52,8 +83,15 @@ export function EntryListPage() {
                 onToggle={toggleCategory}
             />
             <ul>
-                {visibleEntries.map((entry) => (
-                    <EntryRow key={entry.url} entry={entry} />
+                {visibleEntries.map((entry, index) => (
+                    <EntryRow
+                        key={entry.url}
+                        entry={entry}
+                        focused={index === focusedIndex}
+                        itemRef={(el) => {
+                            itemRefs.current[index] = el;
+                        }}
+                    />
                 ))}
             </ul>
         </div>
