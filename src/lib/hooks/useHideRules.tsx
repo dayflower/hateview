@@ -1,4 +1,10 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+    createContext,
+    type ReactNode,
+    useCallback,
+    useContext,
+    useState,
+} from "react";
 import type {
     HideableEntry,
     HideRule,
@@ -20,23 +26,33 @@ export function HideRulesProvider({ children }: { children: ReactNode }) {
         hideRulesStore.listRules(),
     );
 
-    const addRule = (input: HideRuleInput) => {
+    // Stable identities (empty deps): `rules` changing already gives the context `value`
+    // object below a new identity, which is what makes consumers re-render.
+    const addRule = useCallback((input: HideRuleInput) => {
         hideRulesStore.addRule(input);
         setRules(hideRulesStore.listRules());
-    };
+    }, []);
 
-    const removeRule = (id: string) => {
+    const removeRule = useCallback((id: string) => {
         hideRulesStore.removeRule(id);
         setRules(hideRulesStore.listRules());
+    }, []);
+
+    const isHidden = useCallback(
+        (entry: HideableEntry) =>
+            hideRulesStore.isHidden(entry, hideRulesStore.listRules()),
+        [],
+    );
+
+    const value: HideRulesContextValue = {
+        rules,
+        addRule,
+        removeRule,
+        isHidden,
     };
 
-    const isHidden = (entry: HideableEntry) =>
-        hideRulesStore.isHidden(entry, rules);
-
     return (
-        <HideRulesContext.Provider
-            value={{ rules, addRule, removeRule, isHidden }}
-        >
+        <HideRulesContext.Provider value={value}>
             {children}
         </HideRulesContext.Provider>
     );

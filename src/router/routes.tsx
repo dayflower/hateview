@@ -6,7 +6,8 @@ export type Route =
 
 const ENTRY_PREFIX = "/entry/";
 
-export function matchRoute(path: string): Route {
+/** Returns `null` for a path that matches none of the app's routes. */
+export function matchRoute(path: string): Route | null {
     if (path === "/" || path === "") {
         return { name: "list" };
     }
@@ -21,10 +22,10 @@ export function matchRoute(path: string): Route {
         try {
             return { name: "entry", url: decodeURIComponent(encoded) };
         } catch {
-            return { name: "list" };
+            return null;
         }
     }
-    return { name: "list" };
+    return null;
 }
 
 export function entryPath(url: string): string {

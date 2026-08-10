@@ -1,6 +1,7 @@
 import {
     createContext,
     type ReactNode,
+    useCallback,
     useContext,
     useEffect,
     useReducer,
@@ -35,13 +36,22 @@ export function ReadTrackingProvider({ children }: { children: ReactNode }) {
             );
     }, []);
 
-    const value: ReadTrackingContextValue = {
-        isRead: (url) => readTrackingStore.isRead(url),
-        markRead: (url) => {
-            readTrackingStore.markRead(url);
-            forceUpdate();
-        },
-    };
+    // isRead/markRead keep a stable identity across renders (empty deps) so effects
+    // that depend on them (e.g. EntryDetailPage's fetch effect) don't re-fire on every
+    // provider re-render — only forceUpdate() should trigger consumers to re-read state.
+    const isRead = useCallback(
+        (url: string) => readTrackingStore.isRead(url),
+        [],
+    );
+    const markRead = useCallback((url: string) => {
+        if (readTrackingStore.isRead(url)) {
+            return;
+        }
+        readTrackingStore.markRead(url);
+        forceUpdate();
+    }, []);
+
+    const value: ReadTrackingContextValue = { isRead, markRead };
 
     return (
         <ReadTrackingContext.Provider value={value}>

@@ -23,3 +23,12 @@ export function useHashPath(): string {
 export function navigate(path: string): void {
     window.location.hash = path;
 }
+
+/** Like `navigate`, but replaces the current history entry instead of pushing a new one —
+ *  for correcting an invalid URL rather than a user-initiated move. */
+export function redirect(path: string): void {
+    const url = new URL(window.location.href);
+    url.hash = path;
+    window.history.replaceState(null, "", url);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
+}

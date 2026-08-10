@@ -1,14 +1,25 @@
+import { useEffect } from "react";
 import { Header } from "./components/layout/Header";
 import { EntryDetailPage } from "./pages/EntryDetailPage";
 import { EntryListPage } from "./pages/EntryListPage";
 import { ReadLaterPage } from "./pages/ReadLaterPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { matchRoute } from "./router/routes";
-import { useHashPath } from "./router/useHashRoute";
+import { redirect, useHashPath } from "./router/useHashRoute";
 
 function App() {
     const path = useHashPath();
     const route = matchRoute(path);
+
+    useEffect(() => {
+        if (route === null) {
+            redirect("/");
+        }
+    }, [route]);
+
+    if (route === null) {
+        return null;
+    }
 
     return (
         <div className="min-h-svh">

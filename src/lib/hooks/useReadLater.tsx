@@ -1,4 +1,10 @@
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+    createContext,
+    type ReactNode,
+    useCallback,
+    useContext,
+    useState,
+} from "react";
 import type { ReadLaterEntry, ReadLaterSnapshot } from "../storage/readLater";
 import * as readLaterStore from "../storage/readLater";
 
@@ -16,23 +22,30 @@ export function ReadLaterProvider({ children }: { children: ReactNode }) {
         readLaterStore.list(),
     );
 
-    const toggle = (snapshot: ReadLaterSnapshot) => {
+    // Stable identities (empty deps) so effects/memos that depend on these functions
+    // don't re-run on every provider re-render.
+    const toggle = useCallback((snapshot: ReadLaterSnapshot) => {
         readLaterStore.toggle(snapshot);
         setEntries(readLaterStore.list());
-    };
+    }, []);
 
-    const remove = (url: string) => {
+    const remove = useCallback((url: string) => {
         readLaterStore.remove(url);
         setEntries(readLaterStore.list());
-    };
+    }, []);
 
-    const isMarked = (url: string) =>
-        entries.some((entry) => entry.url === url);
+    // `entries` changing already gives the provider's context `value` object a new
+    // identity each mutation, which is what causes consumers to re-render; `isMarked`
+    // itself can stay referentially stable and just read fresh state when called.
+    const isMarked = useCallback(
+        (url: string) => readLaterStore.isMarked(url),
+        [],
+    );
+
+    const value: ReadLaterContextValue = { entries, isMarked, toggle, remove };
 
     return (
-        <ReadLaterContext.Provider
-            value={{ entries, isMarked, toggle, remove }}
-        >
+        <ReadLaterContext.Provider value={value}>
             {children}
         </ReadLaterContext.Provider>
     );
