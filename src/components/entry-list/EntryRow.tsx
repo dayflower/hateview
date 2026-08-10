@@ -141,6 +141,7 @@ export function EntryRow({
                         aria-label={
                             marked ? "あとで読むから外す" : "あとで読むに追加"
                         }
+                        className="sm:size-9"
                         onClick={(event) => {
                             stop(event);
                             toggle({
@@ -165,7 +166,7 @@ export function EntryRow({
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="元記事を開く"
-                        className={iconButtonClass}
+                        className={`${iconButtonClass} sm:size-9`}
                         onClick={stop}
                     >
                         <ExternalLink className="size-5" />
@@ -177,11 +178,11 @@ export function EntryRow({
                                 : "このエントリーを削除"
                         }
                         onClick={handleTrashClick}
-                        className={
+                        className={`sm:size-9 ${
                             confirmingDelete
                                 ? "!bg-red-500 !text-white hover:!bg-red-600"
                                 : ""
-                        }
+                        }`}
                     >
                         <Trash2 className="size-5" />
                     </IconButton>
