@@ -1,4 +1,10 @@
-import { Bookmark, BookmarkCheck, ExternalLink, Trash2 } from "lucide-react";
+import {
+    Bookmark,
+    BookmarkCheck,
+    ExternalLink,
+    EyeOff,
+    Trash2,
+} from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
@@ -20,6 +26,7 @@ interface EntryRowProps {
     entry: Entry;
     focused?: boolean;
     isNew?: boolean;
+    onRequestHide: (entry: Entry) => void;
     itemRef?: (el: HTMLLIElement | null) => void;
 }
 
@@ -27,6 +34,7 @@ export function EntryRow({
     entry,
     focused = false,
     isNew = false,
+    onRequestHide,
     itemRef,
 }: EntryRowProps) {
     const { isRead } = useReadTracking();
@@ -171,6 +179,16 @@ export function EntryRow({
                     >
                         <ExternalLink className="size-5" />
                     </a>
+                    <IconButton
+                        aria-label="非表示条件を登録"
+                        className="sm:size-9"
+                        onClick={(event) => {
+                            stop(event);
+                            onRequestHide(entry);
+                        }}
+                    >
+                        <EyeOff className="size-5" />
+                    </IconButton>
                     <IconButton
                         aria-label={
                             confirmingDelete

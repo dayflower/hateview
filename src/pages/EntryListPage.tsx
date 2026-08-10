@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { HideRuleModal } from "../components/common/HideRuleModal";
 import type { CategoryFilter } from "../components/entry-list/CategoryFilterBar";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
@@ -8,6 +9,7 @@ import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
 import { useRemovedEntries } from "../lib/hooks/useRemovedEntries.tsx";
 import { entryPath } from "../router/routes";
 import { navigate } from "../router/useHashRoute";
+import type { Entry } from "../types/entry";
 
 export function EntryListPage() {
     const { entries, newUrls, loading, error } = useEntries();
@@ -16,6 +18,7 @@ export function EntryListPage() {
     const [selectedCategory, setSelectedCategory] =
         useState<CategoryFilter>("all");
     const [focusedIndex, setFocusedIndex] = useState(-1);
+    const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
     const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
 
     const selectCategory = (category: CategoryFilter) => {
@@ -80,12 +83,20 @@ export function EntryListPage() {
                         entry={entry}
                         focused={index === focusedIndex}
                         isNew={newUrls.has(entry.url)}
+                        onRequestHide={setHideModalEntry}
                         itemRef={(el) => {
                             itemRefs.current[index] = el;
                         }}
                     />
                 ))}
             </ul>
+            {hideModalEntry && (
+                <HideRuleModal
+                    initialDomain={new URL(hideModalEntry.url).hostname}
+                    initialTitle={hideModalEntry.title}
+                    onClose={() => setHideModalEntry(null)}
+                />
+            )}
         </div>
     );
 }

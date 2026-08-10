@@ -1,5 +1,6 @@
-import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
+import { HideRuleModal } from "../components/common/HideRuleModal";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
@@ -28,6 +29,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         error: null,
     });
     const [hideNoComment, setHideNoComment] = useState(false);
+    const [hideModalOpen, setHideModalOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -67,6 +69,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     }
 
     const marked = isMarked(url);
+    const domain = new URL(url).hostname;
     const bookmarks = hideNoComment
         ? state.data.bookmarks.filter(
               (bookmark) => bookmark.comment.trim() !== "",
@@ -117,6 +120,14 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                     本家のブクマページを開く
                     <ExternalLink className="size-4" />
                 </a>
+                <button
+                    type="button"
+                    onClick={() => setHideModalOpen(true)}
+                    className="inline-flex items-center gap-1 text-blue-700 hover:underline dark:text-blue-400"
+                >
+                    <EyeOff className="size-4" />
+                    非表示条件を登録
+                </button>
             </div>
             <label className="mt-3 flex items-center gap-1.5 text-sm">
                 <input
@@ -130,6 +141,13 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             <div className="mt-4">
                 <BookmarkList bookmarks={bookmarks} />
             </div>
+            {hideModalOpen && (
+                <HideRuleModal
+                    initialDomain={domain}
+                    initialTitle={state.data.title}
+                    onClose={() => setHideModalOpen(false)}
+                />
+            )}
         </div>
     );
 }
