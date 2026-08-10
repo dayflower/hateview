@@ -1,11 +1,12 @@
-import { ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { entryPath } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
 import { CategoryBadge } from "../common/CategoryBadge";
 import { FaviconImg } from "../common/FaviconImg";
-import { iconButtonClass } from "../common/IconButton";
+import { IconButton, iconButtonClass } from "../common/IconButton";
 import { RelativeTime } from "../common/RelativeTime";
 
 interface EntryRowProps {
@@ -14,8 +15,10 @@ interface EntryRowProps {
 
 export function EntryRow({ entry }: EntryRowProps) {
     const { isRead } = useReadTracking();
+    const { isMarked, toggle } = useReadLater();
     const domain = new URL(entry.url).hostname;
     const read = isRead(entry.url);
+    const marked = isMarked(entry.url);
 
     return (
         <li
@@ -54,6 +57,26 @@ export function EntryRow({ entry }: EntryRowProps) {
                     <RelativeTime date={entry.date} />
                 </div>
             </div>
+            <IconButton
+                aria-label={marked ? "あとで読むから外す" : "あとで読むに追加"}
+                onClick={() =>
+                    toggle({
+                        url: entry.url,
+                        title: entry.title,
+                        description: entry.description,
+                        imageUrl: entry.imageUrl,
+                        bookmarkCount: entry.bookmarkCount,
+                        categories: entry.categories,
+                        tags: entry.tags,
+                    })
+                }
+            >
+                {marked ? (
+                    <BookmarkCheck className="size-5 text-blue-600 dark:text-blue-400" />
+                ) : (
+                    <Bookmark className="size-5" />
+                )}
+            </IconButton>
             <a
                 href={entry.url}
                 target="_blank"

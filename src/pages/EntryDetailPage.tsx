@@ -1,6 +1,7 @@
-import { ExternalLink } from "lucide-react";
+import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
+import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import {
     bookmarkEntryPageUrl,
@@ -20,6 +21,7 @@ interface DetailState {
 
 export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const { markRead } = useReadTracking();
+    const { isMarked, toggle } = useReadLater();
     const [state, setState] = useState<DetailState>({
         data: null,
         loading: true,
@@ -63,9 +65,30 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         );
     }
 
+    const marked = isMarked(url);
+
     return (
         <div className="mx-auto max-w-2xl p-4">
-            <h1 className="font-semibold text-lg">{state.data.title}</h1>
+            <div className="flex items-start justify-between gap-2">
+                <h1 className="font-semibold text-lg">{state.data.title}</h1>
+                <button
+                    type="button"
+                    aria-label={
+                        marked ? "あとで読むから外す" : "あとで読むに追加"
+                    }
+                    onClick={() =>
+                        toggle({ url, title: state.data?.title ?? url })
+                    }
+                    className="flex shrink-0 items-center gap-1 rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700"
+                >
+                    {marked ? (
+                        <BookmarkCheck className="size-4 text-blue-600 dark:text-blue-400" />
+                    ) : (
+                        <Bookmark className="size-4" />
+                    )}
+                    あとで読む
+                </button>
+            </div>
             <p className="mt-1 text-gray-500 text-sm">
                 {state.data.count} users
             </p>
