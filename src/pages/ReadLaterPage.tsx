@@ -1,6 +1,7 @@
 import { ExternalLink, X } from "lucide-react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { iconButtonClass } from "../components/common/IconButton";
+import { Thumbnail } from "../components/common/Thumbnail";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { entryPath } from "../router/routes";
 import { navigate } from "../router/useHashRoute";
@@ -26,14 +27,7 @@ export function ReadLaterPage() {
                         key={entry.url}
                         className="flex flex-wrap items-start gap-3 border-gray-200 border-b py-3 dark:border-gray-800"
                     >
-                        {entry.imageUrl && (
-                            <img
-                                src={entry.imageUrl}
-                                alt=""
-                                className="size-20 shrink-0 rounded object-cover"
-                                loading="lazy"
-                            />
-                        )}
+                        <Thumbnail src={entry.imageUrl} />
                         <div className="min-w-0 flex-1">
                             <button
                                 type="button"

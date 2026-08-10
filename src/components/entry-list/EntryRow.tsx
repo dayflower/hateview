@@ -8,6 +8,7 @@ import { CategoryBadge } from "../common/CategoryBadge";
 import { FaviconImg } from "../common/FaviconImg";
 import { IconButton, iconButtonClass } from "../common/IconButton";
 import { RelativeTime } from "../common/RelativeTime";
+import { Thumbnail } from "../common/Thumbnail";
 
 interface EntryRowProps {
     entry: Entry;
@@ -29,14 +30,7 @@ export function EntryRow({ entry, focused = false, itemRef }: EntryRowProps) {
                 read ? "opacity-50" : ""
             } ${focused ? "ring-2 ring-blue-500 ring-inset" : ""}`}
         >
-            {entry.imageUrl && (
-                <img
-                    src={entry.imageUrl}
-                    alt=""
-                    className="size-20 shrink-0 rounded object-cover"
-                    loading="lazy"
-                />
-            )}
+            <Thumbnail src={entry.imageUrl} />
             <div className="min-w-0 flex-1">
                 <button
                     type="button"
