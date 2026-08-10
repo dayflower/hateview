@@ -7,6 +7,9 @@ import { hatenaDevPlugin } from "./pipeline/vite-plugin-hatena-dev.ts";
 export default defineConfig({
     base: "/hateview/",
     plugins: [react(), tailwindcss(), hatenaDevPlugin()],
+    server: {
+        port: process.env.PORT ? Number(process.env.PORT) : 5173,
+    },
     test: {
         environment: "jsdom",
     },
