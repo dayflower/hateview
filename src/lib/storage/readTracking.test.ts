@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isRead, markRead, pruneOldReadRecords } from "./readTracking";
+import {
+    isRead,
+    markRead,
+    markUnread,
+    pruneOldReadRecords,
+} from "./readTracking";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -26,6 +31,21 @@ describe("markRead / isRead", () => {
         // (i.e. the second markRead call did not push the clock forward).
         vi.setSystemTime(new Date("2026-02-01T00:00:00.000Z"));
         pruneOldReadRecords(30 * DAY_MS);
+        expect(isRead("https://example.com/a")).toBe(false);
+    });
+});
+
+describe("markUnread", () => {
+    it("removes a url from the read store", () => {
+        markRead("https://example.com/a");
+        expect(isRead("https://example.com/a")).toBe(true);
+
+        markUnread("https://example.com/a");
+        expect(isRead("https://example.com/a")).toBe(false);
+    });
+
+    it("is a no-op for a url that was never marked read", () => {
+        expect(() => markUnread("https://example.com/a")).not.toThrow();
         expect(isRead("https://example.com/a")).toBe(false);
     });
 });

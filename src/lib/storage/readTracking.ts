@@ -31,6 +31,15 @@ export function markRead(url: string): void {
     save(store);
 }
 
+export function markUnread(url: string): void {
+    const store = load();
+    if (!(url in store)) {
+        return;
+    }
+    delete store[url];
+    save(store);
+}
+
 export function pruneOldReadRecords(
     maxAgeMs: number = DEFAULT_MAX_AGE_MS,
 ): void {

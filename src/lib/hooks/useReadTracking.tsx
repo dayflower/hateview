@@ -11,6 +11,7 @@ import * as readTrackingStore from "../storage/readTracking";
 interface ReadTrackingContextValue {
     isRead: (url: string) => boolean;
     markRead: (url: string) => void;
+    markUnread: (url: string) => void;
 }
 
 const ReadTrackingContext = createContext<ReadTrackingContextValue | null>(
@@ -50,8 +51,15 @@ export function ReadTrackingProvider({ children }: { children: ReactNode }) {
         readTrackingStore.markRead(url);
         forceUpdate();
     }, []);
+    const markUnread = useCallback((url: string) => {
+        if (!readTrackingStore.isRead(url)) {
+            return;
+        }
+        readTrackingStore.markUnread(url);
+        forceUpdate();
+    }, []);
 
-    const value: ReadTrackingContextValue = { isRead, markRead };
+    const value: ReadTrackingContextValue = { isRead, markRead, markUnread };
 
     return (
         <ReadTrackingContext.Provider value={value}>

@@ -1,6 +1,8 @@
 import {
     Bookmark,
     BookmarkCheck,
+    CheckCircle2,
+    Circle,
     ExternalLink,
     EyeOff,
     MoreVertical,
@@ -39,7 +41,7 @@ export function EntryRow({
     onRequestHide,
     itemRef,
 }: EntryRowProps) {
-    const { isRead } = useReadTracking();
+    const { isRead, markRead, markUnread } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
     const { removeEntry } = useRemovedEntries();
     const domain = new URL(entry.url).hostname;
@@ -124,6 +126,9 @@ export function EntryRow({
     };
 
     const stop = (event: MouseEvent) => event.stopPropagation();
+
+    const toggleRead = () =>
+        read ? markUnread(entry.url) : markRead(entry.url);
 
     const handleTrashClick = (event: MouseEvent) => {
         stop(event);
@@ -232,6 +237,20 @@ export function EntryRow({
                         <ExternalLink className="size-5" />
                     </a>
                     <IconButton
+                        aria-label={read ? "未読に戻す" : "既読にする"}
+                        className="sm:hidden"
+                        onClick={(event) => {
+                            stop(event);
+                            toggleRead();
+                        }}
+                    >
+                        {read ? (
+                            <CheckCircle2 className="size-5 text-blue-600 dark:text-blue-400" />
+                        ) : (
+                            <Circle className="size-5" />
+                        )}
+                    </IconButton>
+                    <IconButton
                         aria-label="非表示条件を登録"
                         className="sm:hidden"
                         onClick={(event) => {
@@ -285,6 +304,23 @@ export function EntryRow({
                                 }}
                                 className="fixed z-20 w-48 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-800 dark:bg-gray-900"
                             >
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={(event) => {
+                                        stop(event);
+                                        setMenuOpen(false);
+                                        toggleRead();
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    {read ? (
+                                        <CheckCircle2 className="size-4" />
+                                    ) : (
+                                        <Circle className="size-4" />
+                                    )}
+                                    {read ? "未読に戻す" : "既読にする"}
+                                </button>
                                 <button
                                     type="button"
                                     role="menuitem"
