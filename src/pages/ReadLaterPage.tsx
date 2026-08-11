@@ -45,12 +45,9 @@ export function ReadLaterPage() {
                                 {entry.bookmarkCount !== undefined && (
                                     <span>{entry.bookmarkCount} users</span>
                                 )}
-                                {entry.categories?.map((category) => (
-                                    <CategoryBadge
-                                        key={category}
-                                        category={category}
-                                    />
-                                ))}
+                                {entry.category && (
+                                    <CategoryBadge category={entry.category} />
+                                )}
                             </div>
                         </div>
                         <div className="flex w-full justify-end gap-1 sm:w-auto">

@@ -1,4 +1,4 @@
-export type CategoryId = "it" | "general";
+export type FeedId = "all" | "general" | "it";
 
 export interface Entry {
     url: string;
@@ -9,7 +9,7 @@ export interface Entry {
     bookmarkCommentPageUrl: string;
     date: string;
     tags: string[];
-    categories: CategoryId[];
+    category: string;
     rank: number;
 }
 

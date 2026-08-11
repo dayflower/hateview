@@ -1,4 +1,3 @@
-import type { CategoryId } from "../../types/entry";
 import { readJson, writeJson } from "./localStorageJson";
 
 const STORAGE_KEY = "hateview:v1:later";
@@ -9,7 +8,7 @@ export interface ReadLaterSnapshot {
     description?: string;
     imageUrl?: string;
     bookmarkCount?: number;
-    categories?: CategoryId[];
+    category?: string;
     tags?: string[];
 }
 

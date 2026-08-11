@@ -1,12 +1,12 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import type { CategoryId } from "../../types/entry";
+import type { FeedId } from "../../types/entry";
 
-export type CategoryFilter = "all" | CategoryId;
+export type CategoryFilter = FeedId;
 
 export const CATEGORY_FILTERS: { id: CategoryFilter; label: string }[] = [
     { id: "all", label: "総合" },
     { id: "general", label: "一般" },
-    { id: "it", label: "IT" },
+    { id: "it", label: "テクノロジー" },
 ];
 
 interface CategoryFilterBarProps {

@@ -14,7 +14,7 @@ describe("toggle", () => {
             description: "desc",
             imageUrl: "https://example.com/a.png",
             bookmarkCount: 10,
-            categories: ["it"],
+            category: "テクノロジー",
             tags: ["tag"],
         });
 
@@ -27,7 +27,7 @@ describe("toggle", () => {
             description: "desc",
             imageUrl: "https://example.com/a.png",
             bookmarkCount: 10,
-            categories: ["it"],
+            category: "テクノロジー",
             tags: ["tag"],
         });
         expect(typeof entry.markedAt).toBe("string");

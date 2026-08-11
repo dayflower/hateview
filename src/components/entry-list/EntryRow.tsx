@@ -189,9 +189,9 @@ export function EntryRow({
                         <span>{entry.bookmarkCount} users</span>
                         <FaviconImg domain={domain} />
                         <span>{domain}</span>
-                        {entry.categories.map((category) => (
-                            <CategoryBadge key={category} category={category} />
-                        ))}
+                        {entry.category && (
+                            <CategoryBadge category={entry.category} />
+                        )}
                         <RelativeTime date={entry.date} />
                         {isNew && <NewBadge />}
                     </div>
@@ -210,7 +210,7 @@ export function EntryRow({
                                 description: entry.description,
                                 imageUrl: entry.imageUrl,
                                 bookmarkCount: entry.bookmarkCount,
-                                categories: entry.categories,
+                                category: entry.category,
                                 tags: entry.tags,
                             });
                         }}

@@ -12,11 +12,11 @@ import { navigate } from "../router/useHashRoute";
 import type { Entry } from "../types/entry";
 
 export function EntryListPage() {
-    const { entries, newUrls, loading, error } = useEntries();
-    const { isHidden } = useHideRules();
-    const { isRemoved } = useRemovedEntries();
     const [selectedCategory, setSelectedCategory] =
         useState<CategoryFilter>("all");
+    const { entries, newUrls, loading, error } = useEntries(selectedCategory);
+    const { isHidden } = useHideRules();
+    const { isRemoved } = useRemovedEntries();
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
     const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -31,11 +31,6 @@ export function EntryListPage() {
     // underlying storage changes without those identities changing. The entry count
     // is small enough that recomputing this on every render is inexpensive.
     const visibleEntries = entries
-        .filter(
-            (entry) =>
-                selectedCategory === "all" ||
-                entry.categories.includes(selectedCategory),
-        )
         .filter((entry) => !isHidden(entry))
         .filter((entry) => !isRemoved(entry.url));
 

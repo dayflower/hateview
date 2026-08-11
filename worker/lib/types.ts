@@ -1,6 +1,6 @@
-import type { CategoryId, EntriesFile, Entry } from "../../src/types/entry.ts";
+import type { EntriesFile, Entry, FeedId } from "../../src/types/entry.ts";
 
-export type { CategoryId, EntriesFile, Entry };
+export type { EntriesFile, Entry, FeedId };
 
 export interface RawFeedItem {
     url: string;
@@ -10,10 +10,6 @@ export interface RawFeedItem {
     bookmarkCount: number;
     bookmarkCommentPageUrl: string;
     date: string;
+    category: string;
     tags: string[];
-}
-
-export interface CategoryFeed {
-    id: CategoryId;
-    url: string;
 }

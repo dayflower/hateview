@@ -43,16 +43,21 @@ export function parseHotEntryRss(xml: string): RawFeedItem[] {
     const doc = parser.parse(xml) as RdfDoc;
     const rawItems = doc["rdf:RDF"].item ?? [];
 
-    const items: RawFeedItem[] = rawItems.map((item) => ({
-        url: item["@_rdf:about"],
-        title: item.title ?? "",
-        description: item.description ?? "",
-        imageUrl: item["hatena:imageurl"] ?? "",
-        bookmarkCount: item["hatena:bookmarkcount"] ?? 0,
-        bookmarkCommentPageUrl: item["hatena:bookmarkCommentListPageUrl"] ?? "",
-        date: item["dc:date"] ?? "",
-        tags: item["dc:subject"] ?? [],
-    }));
+    const items: RawFeedItem[] = rawItems.map((item) => {
+        const [category = "", ...tags] = item["dc:subject"] ?? [];
+        return {
+            url: item["@_rdf:about"],
+            title: item.title ?? "",
+            description: item.description ?? "",
+            imageUrl: item["hatena:imageurl"] ?? "",
+            bookmarkCount: item["hatena:bookmarkcount"] ?? 0,
+            bookmarkCommentPageUrl:
+                item["hatena:bookmarkCommentListPageUrl"] ?? "",
+            date: item["dc:date"] ?? "",
+            category,
+            tags,
+        };
+    });
 
     const seq = doc["rdf:RDF"].channel.items?.["rdf:Seq"]?.["rdf:li"] ?? [];
     const seqUrls = seq
