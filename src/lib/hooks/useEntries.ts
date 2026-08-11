@@ -14,6 +14,19 @@ interface EntriesState {
 
 const cache = new Map<FeedId, { entries: Entry[]; newUrls: Set<string> }>();
 
+/** Looks up an already-fetched entry (any feed loaded this session) by URL,
+ *  so pages like the entry detail view can reuse list-only fields (category,
+ *  description, imageUrl) that Hatena's per-entry bookmark API doesn't return. */
+export function findCachedEntry(url: string): Entry | undefined {
+    for (const { entries } of cache.values()) {
+        const found = entries.find((entry) => entry.url === url);
+        if (found) {
+            return found;
+        }
+    }
+    return undefined;
+}
+
 /** Each feed (all/general/it) is an independent server resource, so switching
  *  tabs re-fetches unless that feed was already loaded this session. */
 export function useEntries(feed: FeedId): EntriesState {

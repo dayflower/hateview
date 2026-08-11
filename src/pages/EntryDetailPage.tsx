@@ -1,7 +1,10 @@
 import { Bookmark, BookmarkCheck, ExternalLink, EyeOff } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CategoryBadge } from "../components/common/CategoryBadge";
 import { HideRuleModal } from "../components/common/HideRuleModal";
+import { Thumbnail } from "../components/common/Thumbnail";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
+import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import {
@@ -70,6 +73,10 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
 
     const marked = isMarked(url);
     const domain = new URL(url).hostname;
+    // Hatena's per-entry bookmark API doesn't return category/description/
+    // image, so fall back to the list API's data for this URL, if it was
+    // already fetched this session (e.g. via the entry list).
+    const cachedEntry = findCachedEntry(url);
     const bookmarks = hideNoComment
         ? state.data.bookmarks.filter(
               (bookmark) => bookmark.comment.trim() !== "",
@@ -101,6 +108,25 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             <p className="mt-1 font-bold text-rose-500 text-sm dark:text-rose-400">
                 {state.data.count} users
             </p>
+            {cachedEntry && (
+                <div className="mt-3 flex gap-3">
+                    <Thumbnail src={cachedEntry.imageUrl} />
+                    <div className="min-w-0 flex-1">
+                        {cachedEntry.description && (
+                            <p className="text-gray-600 text-sm dark:text-gray-400">
+                                {cachedEntry.description}
+                            </p>
+                        )}
+                        {cachedEntry.category && (
+                            <div className="mt-1.5">
+                                <CategoryBadge
+                                    category={cachedEntry.category}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
                 <a
                     href={url}
