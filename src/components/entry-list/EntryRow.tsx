@@ -202,11 +202,40 @@ export function EntryRow({
                     </div>
                 </div>
                 <div className="flex w-full justify-end gap-1 sm:w-auto sm:flex-col">
+                    <a
+                        href={entry.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="元記事を開く"
+                        title="元記事を開く"
+                        className={`${iconButtonClass} sm:size-9`}
+                        onClick={stop}
+                    >
+                        <ExternalLink className="size-5" />
+                    </a>
+                    <IconButton
+                        aria-label={read ? "未読に戻す" : "既読にする"}
+                        title={read ? "未読に戻す" : "既読にする"}
+                        className="sm:size-9"
+                        onClick={(event) => {
+                            stop(event);
+                            toggleRead();
+                        }}
+                    >
+                        {read ? (
+                            <CheckCircle2 className="size-5 text-blue-600 dark:text-blue-400" />
+                        ) : (
+                            <Circle className="size-5" />
+                        )}
+                    </IconButton>
                     <IconButton
                         aria-label={
                             marked ? "あとで読むから外す" : "あとで読むに追加"
                         }
-                        className="sm:size-9"
+                        title={
+                            marked ? "あとで読むから外す" : "あとで読むに追加"
+                        }
+                        className="sm:hidden"
                         onClick={(event) => {
                             stop(event);
                             toggle({
@@ -226,32 +255,9 @@ export function EntryRow({
                             <Bookmark className="size-5" />
                         )}
                     </IconButton>
-                    <a
-                        href={entry.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="元記事を開く"
-                        className={`${iconButtonClass} sm:size-9`}
-                        onClick={stop}
-                    >
-                        <ExternalLink className="size-5" />
-                    </a>
-                    <IconButton
-                        aria-label={read ? "未読に戻す" : "既読にする"}
-                        className="sm:hidden"
-                        onClick={(event) => {
-                            stop(event);
-                            toggleRead();
-                        }}
-                    >
-                        {read ? (
-                            <CheckCircle2 className="size-5 text-blue-600 dark:text-blue-400" />
-                        ) : (
-                            <Circle className="size-5" />
-                        )}
-                    </IconButton>
                     <IconButton
                         aria-label="非表示条件を登録"
+                        title="非表示条件を登録"
                         className="sm:hidden"
                         onClick={(event) => {
                             stop(event);
@@ -262,6 +268,11 @@ export function EntryRow({
                     </IconButton>
                     <IconButton
                         aria-label={
+                            confirmingDelete
+                                ? "もう一度クリックして削除を確定"
+                                : "このエントリーを削除"
+                        }
+                        title={
                             confirmingDelete
                                 ? "もう一度クリックして削除を確定"
                                 : "このエントリーを削除"
@@ -279,6 +290,7 @@ export function EntryRow({
                         ref={menuButtonRef}
                         type="button"
                         aria-label="その他の操作"
+                        title="その他の操作"
                         aria-expanded={menuOpen}
                         onClick={(event) => {
                             stop(event);
@@ -310,16 +322,26 @@ export function EntryRow({
                                     onClick={(event) => {
                                         stop(event);
                                         setMenuOpen(false);
-                                        toggleRead();
+                                        toggle({
+                                            url: entry.url,
+                                            title: entry.title,
+                                            description: entry.description,
+                                            imageUrl: entry.imageUrl,
+                                            bookmarkCount: entry.bookmarkCount,
+                                            category: entry.category,
+                                            tags: entry.tags,
+                                        });
                                     }}
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
                                 >
-                                    {read ? (
-                                        <CheckCircle2 className="size-4" />
+                                    {marked ? (
+                                        <BookmarkCheck className="size-4 text-blue-600 dark:text-blue-400" />
                                     ) : (
-                                        <Circle className="size-4" />
+                                        <Bookmark className="size-4" />
                                     )}
-                                    {read ? "未読に戻す" : "既読にする"}
+                                    {marked
+                                        ? "あとで読むから外す"
+                                        : "あとで読むに追加"}
                                 </button>
                                 <button
                                     type="button"
