@@ -3,9 +3,11 @@ import {
     BookmarkCheck,
     ExternalLink,
     EyeOff,
+    MoreVertical,
     Trash2,
 } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../../lib/hooks/useRemovedEntries.tsx";
@@ -50,6 +52,56 @@ export function EntryRow({
     );
 
     useEffect(() => () => clearTimeout(confirmTimeoutRef.current), []);
+
+    const [menuOpen, setMenuOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<{
+        top: number;
+        right: number;
+    } | null>(null);
+    const menuButtonRef = useRef<HTMLButtonElement>(null);
+    const menuContentRef = useRef<HTMLDivElement>(null);
+
+    const openMenu = () => {
+        const rect = menuButtonRef.current?.getBoundingClientRect();
+        if (rect) {
+            setMenuPosition({
+                top: rect.bottom + 4,
+                right: window.innerWidth - rect.right,
+            });
+        }
+        setMenuOpen(true);
+    };
+
+    // The row's <li> clips overflow for the swipe-to-delete animation, so the
+    // dropdown is portaled to <body> and fixed-positioned instead of nested inside it.
+    useEffect(() => {
+        if (!menuOpen) {
+            return;
+        }
+        const closeMenu = (event: Event) => {
+            const target = event.target as Node;
+            if (menuButtonRef.current?.contains(target)) {
+                return;
+            }
+            if (menuContentRef.current?.contains(target)) {
+                return;
+            }
+            setMenuOpen(false);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", closeMenu);
+        document.addEventListener("keydown", closeOnEscape);
+        window.addEventListener("scroll", closeMenu, true);
+        return () => {
+            document.removeEventListener("mousedown", closeMenu);
+            document.removeEventListener("keydown", closeOnEscape);
+            window.removeEventListener("scroll", closeMenu, true);
+        };
+    }, [menuOpen]);
 
     const {
         liRef,
@@ -181,7 +233,7 @@ export function EntryRow({
                     </a>
                     <IconButton
                         aria-label="非表示条件を登録"
-                        className="sm:size-9"
+                        className="sm:hidden"
                         onClick={(event) => {
                             stop(event);
                             onRequestHide(entry);
@@ -196,7 +248,7 @@ export function EntryRow({
                                 : "このエントリーを削除"
                         }
                         onClick={handleTrashClick}
-                        className={`sm:size-9 ${
+                        className={`sm:hidden ${
                             confirmingDelete
                                 ? "!bg-red-500 !text-white hover:!bg-red-600"
                                 : ""
@@ -204,6 +256,72 @@ export function EntryRow({
                     >
                         <Trash2 className="size-5" />
                     </IconButton>
+                    <button
+                        ref={menuButtonRef}
+                        type="button"
+                        aria-label="その他の操作"
+                        aria-expanded={menuOpen}
+                        onClick={(event) => {
+                            stop(event);
+                            if (menuOpen) {
+                                setMenuOpen(false);
+                            } else {
+                                openMenu();
+                            }
+                        }}
+                        className={`hidden sm:flex ${iconButtonClass} sm:size-9`}
+                    >
+                        <MoreVertical className="size-5" />
+                    </button>
+                    {menuOpen &&
+                        menuPosition &&
+                        createPortal(
+                            <div
+                                ref={menuContentRef}
+                                role="menu"
+                                style={{
+                                    top: menuPosition.top,
+                                    right: menuPosition.right,
+                                }}
+                                className="fixed z-20 w-48 rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                            >
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={(event) => {
+                                        stop(event);
+                                        setMenuOpen(false);
+                                        onRequestHide(entry);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    <EyeOff className="size-4" />
+                                    非表示条件を登録
+                                </button>
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={(event) => {
+                                        const wasConfirming = confirmingDelete;
+                                        handleTrashClick(event);
+                                        if (wasConfirming) {
+                                            setMenuOpen(false);
+                                        }
+                                    }}
+                                    className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                                        confirmingDelete
+                                            ? "text-red-600 dark:text-red-400"
+                                            : ""
+                                    }`}
+                                >
+                                    <Trash2 className="size-4" />
+                                    {confirmingDelete
+                                        ? "もう一度クリックして削除を確定"
+                                        : "このエントリーを削除"}
+                                </button>
+                            </div>,
+                            document.body,
+                        )}
                 </div>
             </div>
         </li>
