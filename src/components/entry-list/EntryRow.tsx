@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { type MouseEvent, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { toReadLaterSnapshot } from "../../lib/entry/readLaterSnapshot";
 import { useConfirmAction } from "../../lib/hooks/useConfirmAction";
 import { useDropdownMenu } from "../../lib/hooks/useDropdownMenu";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
@@ -103,6 +104,16 @@ export function EntryRow({
             closeMenu();
         }
     };
+
+    // Shared between the icon column (small screens) and the overflow menu
+    // (sm+): both trigger the same three actions, so the label and the
+    // handler are defined once here rather than duplicated per layout.
+    const readLaterLabel = marked ? "あとで読むから外す" : "あとで読むに追加";
+    const handleReadLater = () => toggle(toReadLaterSnapshot(entry));
+    const handleHide = () => onRequestHide(entry);
+    const deleteLabel = confirmingDelete
+        ? "もう一度クリックして削除を確定"
+        : "このエントリーを削除";
 
     const rowElRef = useRef<HTMLLIElement | null>(null);
     const setLiRef = (el: HTMLLIElement | null) => {
@@ -224,24 +235,12 @@ export function EntryRow({
                         )}
                     </IconButton>
                     <IconButton
-                        aria-label={
-                            marked ? "あとで読むから外す" : "あとで読むに追加"
-                        }
-                        title={
-                            marked ? "あとで読むから外す" : "あとで読むに追加"
-                        }
+                        aria-label={readLaterLabel}
+                        title={readLaterLabel}
                         className="sm:hidden"
                         onClick={(event) => {
                             stop(event);
-                            toggle({
-                                url: entry.url,
-                                title: entry.title,
-                                description: entry.description,
-                                imageUrl: entry.imageUrl,
-                                bookmarkCount: entry.bookmarkCount,
-                                category: entry.category,
-                                tags: entry.tags,
-                            });
+                            handleReadLater();
                         }}
                     >
                         {marked ? (
@@ -256,22 +255,14 @@ export function EntryRow({
                         className="sm:hidden"
                         onClick={(event) => {
                             stop(event);
-                            onRequestHide(entry);
+                            handleHide();
                         }}
                     >
                         <EyeOff className="size-5" />
                     </IconButton>
                     <IconButton
-                        aria-label={
-                            confirmingDelete
-                                ? "もう一度クリックして削除を確定"
-                                : "このエントリーを削除"
-                        }
-                        title={
-                            confirmingDelete
-                                ? "もう一度クリックして削除を確定"
-                                : "このエントリーを削除"
-                        }
+                        aria-label={deleteLabel}
+                        title={deleteLabel}
                         onClick={handleTrashClick}
                         className={`sm:hidden ${
                             confirmingDelete
@@ -313,15 +304,7 @@ export function EntryRow({
                                     onClick={(event) => {
                                         stop(event);
                                         closeMenu();
-                                        toggle({
-                                            url: entry.url,
-                                            title: entry.title,
-                                            description: entry.description,
-                                            imageUrl: entry.imageUrl,
-                                            bookmarkCount: entry.bookmarkCount,
-                                            category: entry.category,
-                                            tags: entry.tags,
-                                        });
+                                        handleReadLater();
                                     }}
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
                                 >
@@ -330,9 +313,7 @@ export function EntryRow({
                                     ) : (
                                         <Bookmark className="size-4" />
                                     )}
-                                    {marked
-                                        ? "あとで読むから外す"
-                                        : "あとで読むに追加"}
+                                    {readLaterLabel}
                                 </button>
                                 <button
                                     type="button"
@@ -340,7 +321,7 @@ export function EntryRow({
                                     onClick={(event) => {
                                         stop(event);
                                         closeMenu();
-                                        onRequestHide(entry);
+                                        handleHide();
                                     }}
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
                                 >
@@ -358,9 +339,7 @@ export function EntryRow({
                                     }`}
                                 >
                                     <Trash2 className="size-4" />
-                                    {confirmingDelete
-                                        ? "もう一度クリックして削除を確定"
-                                        : "このエントリーを削除"}
+                                    {deleteLabel}
                                 </button>
                             </div>,
                             document.body,
