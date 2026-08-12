@@ -1,45 +1,26 @@
-import { readJson, writeJson } from "./localStorageJson";
+import { createUrlRecordStore, DEFAULT_MAX_AGE_MS } from "./urlRecordStore";
 
-const STORAGE_KEY = "hateview:v1:removed";
-export const DEFAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+export { DEFAULT_MAX_AGE_MS };
 
-interface RemovedRecord {
-    removedAt: string;
-}
-
-type RemovedStore = Record<string, RemovedRecord>;
-
-function load(): RemovedStore {
-    return readJson<RemovedStore>(STORAGE_KEY, {});
-}
-
-function save(store: RemovedStore): void {
-    writeJson(STORAGE_KEY, store);
-}
+const store = createUrlRecordStore({
+    storageKey: "hateview:v1:removed",
+    timestampField: "removedAt",
+});
 
 export function isRemoved(url: string): boolean {
-    return url in load();
+    return store.has(url);
+}
+
+export function listRemovedUrls(): Set<string> {
+    return store.listUrls();
 }
 
 export function removeEntry(url: string): void {
-    const store = load();
-    store[url] = { removedAt: new Date().toISOString() };
-    save(store);
+    store.add(url);
 }
 
 export function pruneOldRemovedRecords(
     maxAgeMs: number = DEFAULT_MAX_AGE_MS,
 ): void {
-    const store = load();
-    const now = Date.now();
-    let changed = false;
-    for (const [url, record] of Object.entries(store)) {
-        if (now - new Date(record.removedAt).getTime() > maxAgeMs) {
-            delete store[url];
-            changed = true;
-        }
-    }
-    if (changed) {
-        save(store);
-    }
+    store.prune(maxAgeMs);
 }

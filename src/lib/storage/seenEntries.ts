@@ -1,21 +1,11 @@
-import { readJson, writeJson } from "./localStorageJson";
+import { createUrlRecordStore, DEFAULT_MAX_AGE_MS } from "./urlRecordStore";
 
-const STORAGE_KEY = "hateview:v1:seen";
-export const DEFAULT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+export { DEFAULT_MAX_AGE_MS };
 
-interface SeenRecord {
-    firstSeenAt: string;
-}
-
-type SeenStore = Record<string, SeenRecord>;
-
-function load(): SeenStore {
-    return readJson<SeenStore>(STORAGE_KEY, {});
-}
-
-function save(store: SeenStore): void {
-    writeJson(STORAGE_KEY, store);
-}
+const store = createUrlRecordStore({
+    storageKey: "hateview:v1:seen",
+    timestampField: "firstSeenAt",
+});
 
 /**
  * Given the URLs from a freshly fetched entries.json, returns the subset that
@@ -25,10 +15,10 @@ function save(store: SeenStore): void {
  * entry that was fetched but never actually shown stays "new" across fetches.
  */
 export function getNewUrls(urls: string[]): Set<string> {
-    const store = load();
+    const seen = store.listUrls();
     const newUrls = new Set<string>();
     for (const url of urls) {
-        if (!(url in store)) {
+        if (!seen.has(url)) {
             newUrls.add(url);
         }
     }
@@ -37,27 +27,11 @@ export function getNewUrls(urls: string[]): Set<string> {
 
 /** Records a single URL as seen, so it stops being reported by getNewUrls(). */
 export function markUrlSeen(url: string): void {
-    const store = load();
-    if (url in store) {
-        return;
-    }
-    store[url] = { firstSeenAt: new Date().toISOString() };
-    save(store);
+    store.add(url);
 }
 
 export function pruneOldSeenRecords(
     maxAgeMs: number = DEFAULT_MAX_AGE_MS,
 ): void {
-    const store = load();
-    const now = Date.now();
-    let changed = false;
-    for (const [url, record] of Object.entries(store)) {
-        if (now - new Date(record.firstSeenAt).getTime() > maxAgeMs) {
-            delete store[url];
-            changed = true;
-        }
-    }
-    if (changed) {
-        save(store);
-    }
+    store.prune(maxAgeMs);
 }
