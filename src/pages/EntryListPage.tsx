@@ -14,7 +14,8 @@ import type { Entry } from "../types/entry";
 export function EntryListPage() {
     const [selectedCategory, setSelectedCategory] =
         useState<CategoryFilter>("all");
-    const { entries, newUrls, loading, error } = useEntries(selectedCategory);
+    const { entries, newUrls, loading, error, markSeen } =
+        useEntries(selectedCategory);
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
     const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -78,6 +79,7 @@ export function EntryListPage() {
                         entry={entry}
                         focused={index === focusedIndex}
                         isNew={newUrls.has(entry.url)}
+                        onSeen={markSeen}
                         onRequestHide={setHideModalEntry}
                         itemRef={(el) => {
                             itemRefs.current[index] = el;

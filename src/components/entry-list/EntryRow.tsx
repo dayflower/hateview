@@ -25,11 +25,14 @@ import { RelativeTime } from "../common/RelativeTime";
 import { Thumbnail } from "../common/Thumbnail";
 
 const CONFIRM_TIMEOUT_MS = 3000;
+const SEEN_VISIBILITY_THRESHOLD = 0.5;
+const SEEN_DWELL_MS = 600;
 
 interface EntryRowProps {
     entry: Entry;
     focused?: boolean;
     isNew?: boolean;
+    onSeen?: (url: string) => void;
     onRequestHide: (entry: Entry) => void;
     itemRef?: (el: HTMLLIElement | null) => void;
 }
@@ -38,6 +41,7 @@ export function EntryRow({
     entry,
     focused = false,
     isNew = false,
+    onSeen,
     onRequestHide,
     itemRef,
 }: EntryRowProps) {
@@ -144,10 +148,45 @@ export function EntryRow({
         );
     };
 
+    const rowElRef = useRef<HTMLLIElement | null>(null);
     const setLiRef = (el: HTMLLIElement | null) => {
         liRef(el);
         itemRef?.(el);
+        rowElRef.current = el;
     };
+
+    // Only the "new" badge should ever cause a URL to be marked seen, and
+    // only once it's actually been shown on screen for a moment — not merely
+    // fetched. Rows outside the viewport (e.g. further down an unscrolled
+    // list) stay "new" until the user actually scrolls to them.
+    useEffect(() => {
+        if (!isNew || !onSeen || typeof IntersectionObserver === "undefined") {
+            return;
+        }
+        const el = rowElRef.current;
+        if (!el) {
+            return;
+        }
+        let dwellTimeoutId: ReturnType<typeof setTimeout> | undefined;
+        const observer = new IntersectionObserver(
+            ([observerEntry]) => {
+                if (observerEntry.isIntersecting) {
+                    dwellTimeoutId = setTimeout(() => {
+                        onSeen(entry.url);
+                    }, SEEN_DWELL_MS);
+                } else if (dwellTimeoutId) {
+                    clearTimeout(dwellTimeoutId);
+                    dwellTimeoutId = undefined;
+                }
+            },
+            { threshold: SEEN_VISIBILITY_THRESHOLD },
+        );
+        observer.observe(el);
+        return () => {
+            observer.disconnect();
+            clearTimeout(dwellTimeoutId);
+        };
+    }, [isNew, onSeen, entry.url]);
 
     return (
         <li

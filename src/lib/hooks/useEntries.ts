@@ -1,15 +1,23 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Entry, FeedId } from "../../types/entry";
 import {
-    markFetchAndGetNewUrls,
+    getNewUrls,
+    markUrlSeen,
     pruneOldSeenRecords,
 } from "../storage/seenEntries";
 
-interface EntriesState {
+interface FetchState {
     entries: Entry[];
     newUrls: Set<string>;
     loading: boolean;
     error: string | null;
+}
+
+interface EntriesState extends FetchState {
+    /** Marks a single entry URL seen, dropping it from `newUrls`. Intended to
+     *  be called once an entry row has actually been shown to the user
+     *  (e.g. scrolled into view), not merely fetched. */
+    markSeen: (url: string) => void;
 }
 
 const cache = new Map<FeedId, { entries: Entry[]; newUrls: Set<string> }>();
@@ -30,7 +38,7 @@ export function findCachedEntry(url: string): Entry | undefined {
 /** Each feed (all/general/it) is an independent server resource, so switching
  *  tabs re-fetches unless that feed was already loaded this session. */
 export function useEntries(feed: FeedId): EntriesState {
-    const [state, setState] = useState<EntriesState>(() => {
+    const [state, setState] = useState<FetchState>(() => {
         const cached = cache.get(feed);
         return cached
             ? { ...cached, loading: false, error: null }
@@ -62,7 +70,7 @@ export function useEntries(feed: FeedId): EntriesState {
                 if (cancelled) {
                     return;
                 }
-                const newUrls = markFetchAndGetNewUrls(
+                const newUrls = getNewUrls(
                     data.entries.map((entry) => entry.url),
                 );
                 cache.set(feed, { entries: data.entries, newUrls });
@@ -89,5 +97,24 @@ export function useEntries(feed: FeedId): EntriesState {
         };
     }, [feed]);
 
-    return state;
+    const markSeen = useCallback(
+        (url: string) => {
+            markUrlSeen(url);
+            setState((prev) => {
+                if (!prev.newUrls.has(url)) {
+                    return prev;
+                }
+                const newUrls = new Set(prev.newUrls);
+                newUrls.delete(url);
+                const cached = cache.get(feed);
+                if (cached) {
+                    cache.set(feed, { entries: cached.entries, newUrls });
+                }
+                return { ...prev, newUrls };
+            });
+        },
+        [feed],
+    );
+
+    return { ...state, markSeen };
 }
