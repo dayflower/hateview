@@ -24,6 +24,7 @@ import {
     readHideNoComment,
     writeHideNoComment,
 } from "../lib/storage/hideNoComment";
+import { safeExternalUrl } from "../lib/url/externalUrl";
 import type { HatenaJsonliteResponse } from "../types/bookmark";
 
 const SORT_ORDER_OPTIONS: { id: BookmarkSortOrder; label: string }[] = [
@@ -155,7 +156,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             </button>
             <h1 className="font-semibold text-lg">
                 <a
-                    href={url}
+                    href={safeExternalUrl(url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-900 hover:underline dark:text-gray-100"
@@ -187,7 +188,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             )}
             <div className="mt-3 flex flex-wrap gap-4 text-sm">
                 <a
-                    href={url}
+                    href={safeExternalUrl(url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-700 hover:underline dark:text-blue-400"
@@ -196,7 +197,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                     <ExternalLink className="size-4" />
                 </a>
                 <a
-                    href={bookmarkEntryPageUrl(url)}
+                    href={safeExternalUrl(bookmarkEntryPageUrl(url))}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-blue-700 hover:underline dark:text-blue-400"

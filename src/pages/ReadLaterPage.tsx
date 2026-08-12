@@ -3,6 +3,7 @@ import { CategoryBadge } from "../components/common/CategoryBadge";
 import { iconButtonClass } from "../components/common/IconButton";
 import { Thumbnail } from "../components/common/Thumbnail";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
+import { safeExternalUrl } from "../lib/url/externalUrl";
 import { entryPath } from "../router/routes";
 import { navigate } from "../router/useHashRoute";
 
@@ -52,7 +53,7 @@ export function ReadLaterPage() {
                         </div>
                         <div className="flex w-full justify-end gap-1 sm:w-auto">
                             <a
-                                href={entry.url}
+                                href={safeExternalUrl(entry.url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label="元記事を開く"

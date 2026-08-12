@@ -1,3 +1,5 @@
+import { isHttpUrl } from "../lib/url/externalUrl";
+
 export type Route =
     | { name: "list" }
     | { name: "entry"; url: string }
@@ -19,11 +21,16 @@ export function matchRoute(path: string): Route | null {
     }
     if (path.startsWith(ENTRY_PREFIX)) {
         const encoded = path.slice(ENTRY_PREFIX.length);
+        let url: string;
         try {
-            return { name: "entry", url: decodeURIComponent(encoded) };
+            url = decodeURIComponent(encoded);
         } catch {
             return null;
         }
+        // The hash is attacker-supplied, and this url ends up in link hrefs and
+        // in the read-later list, so anything that isn't a web url is treated
+        // as an unknown route (the app then redirects to the list).
+        return isHttpUrl(url) ? { name: "entry", url } : null;
     }
     return null;
 }

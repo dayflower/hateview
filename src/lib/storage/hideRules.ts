@@ -48,10 +48,51 @@ export function removeRule(id: string): void {
     save(load().filter((rule) => rule.id !== id));
 }
 
-function globToRegExp(glob: string): RegExp {
-    const escaped = glob.replace(/[.+^${}()|[\]\\]/g, "\\$&");
-    const pattern = escaped.replace(/\*/g, ".*").replace(/\?/g, ".");
-    return new RegExp(`^${pattern}$`, "i");
+/**
+ * Matches `glob` (`*` for any run of characters, `?` for exactly one) against
+ * the whole of `text`, case-insensitively.
+ *
+ * Deliberately not a translation to a regexp: `*` would become `.*`, and a
+ * pattern such as `*a*a*a*a*b` would then backtrack for a very long time on a
+ * title that doesn't match. This walks the two strings with a single restart
+ * point instead, which is bounded by `glob.length * text.length`, and rules are
+ * re-checked for every entry on every render.
+ */
+function matchesGlob(glob: string, text: string): boolean {
+    const pattern = glob.toLowerCase();
+    const subject = text.toLowerCase();
+
+    let patternIndex = 0;
+    let subjectIndex = 0;
+    let starIndex = -1;
+    let retryIndex = 0;
+
+    while (subjectIndex < subject.length) {
+        const patternChar = pattern[patternIndex];
+        if (
+            patternIndex < pattern.length &&
+            (patternChar === "?" || patternChar === subject[subjectIndex])
+        ) {
+            patternIndex += 1;
+            subjectIndex += 1;
+        } else if (patternIndex < pattern.length && patternChar === "*") {
+            starIndex = patternIndex;
+            retryIndex = subjectIndex;
+            patternIndex += 1;
+        } else if (starIndex >= 0) {
+            // Backtrack: let the last `*` swallow one more character.
+            retryIndex += 1;
+            patternIndex = starIndex + 1;
+            subjectIndex = retryIndex;
+        } else {
+            return false;
+        }
+    }
+
+    while (pattern[patternIndex] === "*") {
+        patternIndex += 1;
+    }
+    return patternIndex === pattern.length;
 }
 
 /** A rule with both `domain` and `titleGlob` requires both to match (AND). */
@@ -65,7 +106,7 @@ export function matchesRule(entry: HideableEntry, rule: HideRule): boolean {
     ) {
         return false;
     }
-    if (rule.titleGlob && !globToRegExp(rule.titleGlob).test(entry.title)) {
+    if (rule.titleGlob && !matchesGlob(rule.titleGlob, entry.title)) {
         return false;
     }
     return true;

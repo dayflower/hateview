@@ -14,6 +14,7 @@ import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../../lib/hooks/useRemovedEntries.tsx";
 import { useRowRemoval } from "../../lib/hooks/useRowRemoval";
+import { safeExternalUrl } from "../../lib/url/externalUrl";
 import { entryPath } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
@@ -242,7 +243,7 @@ export function EntryRow({
                 </div>
                 <div className="flex w-full justify-end gap-1 sm:w-auto sm:flex-col">
                     <a
-                        href={entry.url}
+                        href={safeExternalUrl(entry.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="元記事を開く"

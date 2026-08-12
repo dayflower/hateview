@@ -34,6 +34,50 @@ describe("matchesRule", () => {
         expect(matchesRule(entry, rule({ titleGlob: "*第1?話*" }))).toBe(false);
     });
 
+    it("treats a glob of only wildcards as matching anything", () => {
+        expect(matchesRule(entry, rule({ titleGlob: "*" }))).toBe(true);
+        expect(matchesRule(entry, rule({ titleGlob: "***" }))).toBe(true);
+        expect(
+            matchesRule({ ...entry, title: "" }, rule({ titleGlob: "*" })),
+        ).toBe(true);
+    });
+
+    it("anchors the glob to the whole title", () => {
+        expect(matchesRule(entry, rule({ titleGlob: "ネタバレ" }))).toBe(false);
+        expect(
+            matchesRule(
+                entry,
+                rule({ titleGlob: "サンプル漫画 第123話 ネタバレ注意" }),
+            ),
+        ).toBe(true);
+    });
+
+    it("treats regexp metacharacters in a glob as literals", () => {
+        expect(
+            matchesRule({ ...entry, title: "a.c" }, rule({ titleGlob: "a.c" })),
+        ).toBe(true);
+        expect(
+            matchesRule({ ...entry, title: "abc" }, rule({ titleGlob: "a.c" })),
+        ).toBe(false);
+        expect(
+            matchesRule(
+                { ...entry, title: "price (tax)" },
+                rule({ titleGlob: "*(tax)" }),
+            ),
+        ).toBe(true);
+    });
+
+    it("rejects a pathological glob without catastrophic backtracking", () => {
+        const titleGlob = `${"*a".repeat(30)}*b`;
+        const title = "a".repeat(400);
+
+        const startedAt = performance.now();
+        expect(matchesRule({ ...entry, title }, rule({ titleGlob }))).toBe(
+            false,
+        );
+        expect(performance.now() - startedAt).toBeLessThan(100);
+    });
+
     it("requires both domain and titleGlob to match when both are set (AND)", () => {
         expect(
             matchesRule(
