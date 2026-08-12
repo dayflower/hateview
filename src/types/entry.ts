@@ -6,11 +6,9 @@ export interface Entry {
     description: string;
     imageUrl: string;
     bookmarkCount: number;
-    bookmarkCommentPageUrl: string;
     date: string;
     tags: string[];
     category: string;
-    rank: number;
 }
 
 export interface EntriesFile {

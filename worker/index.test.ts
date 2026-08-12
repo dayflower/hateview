@@ -172,8 +172,12 @@ describe("worker fetch handler", () => {
             url: "https://example.com/1",
             category: "テクノロジー",
             tags: ["tag1"],
-            rank: 1,
         });
+        // Entry order (not a rank field) is how rdf:Seq's rank is expressed.
+        expect(body.entries.map((entry) => entry.url)).toEqual([
+            "https://example.com/1",
+            "https://example.com/2",
+        ]);
     });
 
     it("returns 404 for an unknown feed", async () => {

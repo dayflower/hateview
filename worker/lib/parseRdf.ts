@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import type { RawFeedItem } from "./types.ts";
+import type { Entry } from "../../src/types/entry.ts";
 
 interface RdfLi {
     "@_rdf:resource"?: string;
@@ -12,7 +12,6 @@ interface RawItem {
     "dc:date"?: string;
     "dc:subject"?: string[];
     "hatena:imageurl"?: string;
-    "hatena:bookmarkCommentListPageUrl"?: string;
     "hatena:bookmarkcount"?: number;
 }
 
@@ -39,11 +38,11 @@ const parser = new XMLParser({
 });
 
 /** Parses a Hatena hotentry RSS 1.0 (RDF) feed, preserving the channel's own rdf:Seq rank order. */
-export function parseHotEntryRss(xml: string): RawFeedItem[] {
+export function parseHotEntryRss(xml: string): Entry[] {
     const doc = parser.parse(xml) as RdfDoc;
     const rawItems = doc["rdf:RDF"].item ?? [];
 
-    const items: RawFeedItem[] = rawItems.map((item) => {
+    const items: Entry[] = rawItems.map((item) => {
         const [category = "", ...tags] = item["dc:subject"] ?? [];
         return {
             url: item["@_rdf:about"],
@@ -51,8 +50,6 @@ export function parseHotEntryRss(xml: string): RawFeedItem[] {
             description: item.description ?? "",
             imageUrl: item["hatena:imageurl"] ?? "",
             bookmarkCount: item["hatena:bookmarkcount"] ?? 0,
-            bookmarkCommentPageUrl:
-                item["hatena:bookmarkCommentListPageUrl"] ?? "",
             date: item["dc:date"] ?? "",
             category,
             tags,

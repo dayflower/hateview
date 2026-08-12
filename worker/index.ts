@@ -1,16 +1,16 @@
+import type {
+    HatenaBookmark,
+    HatenaJsonliteResponse,
+} from "../src/types/bookmark.ts";
+import type { EntriesFile, Entry, FeedId } from "../src/types/entry.ts";
+import type {
+    BookmarkStarQuery,
+    StarCountsResponse,
+} from "../src/types/star.ts";
 import { fetchBookmarkEntry } from "./lib/fetchBookmarkEntry.ts";
 import { fetchFeed } from "./lib/fetchHotEntries.ts";
 import { fetchStarCounts } from "./lib/fetchStars.ts";
 import { parseHotEntryRss } from "./lib/parseRdf.ts";
-import type {
-    BookmarkStarQuery,
-    EntriesFile,
-    Entry,
-    FeedId,
-    HatenaBookmark,
-    HatenaJsonliteResponse,
-    StarCountsResponse,
-} from "./lib/types.ts";
 
 export interface Env {
     ASSETS: Fetcher;
@@ -135,11 +135,7 @@ async function cachedJson<T>(
 
 async function buildEntries(feed: FeedId): Promise<EntriesFile> {
     const xml = await fetchFeed(FEED_URLS[feed]);
-    const rawItems = parseHotEntryRss(xml);
-    const entries: Entry[] = rawItems.map((item, index) => ({
-        ...item,
-        rank: index + 1,
-    }));
+    const entries: Entry[] = parseHotEntryRss(xml);
     return {
         generatedAt: new Date().toISOString(),
         entries,

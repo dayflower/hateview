@@ -13,11 +13,9 @@ const SAMPLE_ENTRY: Entry = {
     description: "Sample description",
     imageUrl: "",
     bookmarkCount: 12,
-    bookmarkCommentPageUrl: "",
     date: "2026-08-01T00:00:00Z",
     tags: ["tag1"],
     category: "テクノロジー",
-    rank: 1,
 };
 
 function renderEntryRow() {
