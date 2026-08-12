@@ -26,11 +26,10 @@ const CACHE_TTL_SECONDS = 10 * 60;
 const STAR_CACHE_TTL_SECONDS = 3 * 60;
 const BOOKMARKS_CACHE_TTL_SECONDS = 3 * 60;
 
-/** Hatena entry ids are numeric, but anything URL-safe is accepted so a change
- *  in their format doesn't break the app — the point is to keep separators out
- *  of the star permalink built from it. */
-const EID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
-const USER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+/** Hatena entry ids and usernames are both plain URL-safe tokens, so the same
+ *  pattern checks either — the point is to keep separators out of the star
+ *  permalink built from them, not to validate their exact upstream format. */
+const URL_SAFE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 /** Hatena timestamps look like "2026/08/12 09:59"; only the date part is used. */
 const TIMESTAMP_PATTERN = /^\d{4}\/\d{2}\/\d{2}/;
 const MAX_ENTRY_URL_LENGTH = 2048;
@@ -76,30 +75,75 @@ function isFeedId(value: string): value is FeedId {
     return value in FEED_URLS;
 }
 
-async function buildEntriesResponse(feed: FeedId): Promise<Response> {
+function errorResponse(status: number, message: string): Response {
+    return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+/** Rejects any request that isn't a GET before `handler` runs, so each API
+ *  route doesn't have to repeat the same method check. */
+function requireGet(
+    request: Request,
+    handler: () => Promise<Response>,
+): Promise<Response> {
+    return request.method === "GET"
+        ? handler()
+        : Promise.resolve(errorResponse(405, "method not allowed"));
+}
+
+/** Logs and converts any error `produce` throws into a 502, so callers don't
+ *  leak upstream failure details to the client. */
+async function withUpstreamErrorHandling(
+    label: string,
+    produce: () => Promise<Response>,
+): Promise<Response> {
+    try {
+        return await produce();
+    } catch (err) {
+        console.error(`${label} request failed`, err);
+        return errorResponse(502, "upstream request failed");
+    }
+}
+
+/** Serves `cacheKey` from the Workers Cache API when present; otherwise calls
+ *  `produce`, serializes its result as the JSON response body, and caches
+ *  that response under `cacheKey` for `ttlSeconds` before returning it. */
+async function cachedJson<T>(
+    cacheKey: Request,
+    ctx: ExecutionContext,
+    ttlSeconds: number,
+    produce: () => Promise<T>,
+): Promise<Response> {
+    const cache = caches.default;
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+        return cached;
+    }
+
+    const body = await produce();
+    const response = new Response(JSON.stringify(body), {
+        headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${ttlSeconds}`,
+        },
+    });
+    ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    return response;
+}
+
+async function buildEntries(feed: FeedId): Promise<EntriesFile> {
     const xml = await fetchFeed(FEED_URLS[feed]);
     const rawItems = parseHotEntryRss(xml);
     const entries: Entry[] = rawItems.map((item, index) => ({
         ...item,
         rank: index + 1,
     }));
-    const body: EntriesFile = {
+    return {
         generatedAt: new Date().toISOString(),
         entries,
     };
-    return new Response(JSON.stringify(body), {
-        headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": `public, max-age=${CACHE_TTL_SECONDS}`,
-        },
-    });
-}
-
-function errorResponse(status: number, message: string): Response {
-    return new Response(JSON.stringify({ error: message }), {
-        status,
-        headers: { "Content-Type": "application/json" },
-    });
 }
 
 function isBookmarkStarQuery(value: unknown): value is BookmarkStarQuery {
@@ -112,7 +156,7 @@ function isBookmarkStarQuery(value: unknown): value is BookmarkStarQuery {
     };
     return (
         typeof user === "string" &&
-        USER_PATTERN.test(user) &&
+        URL_SAFE_TOKEN_PATTERN.test(user) &&
         typeof timestamp === "string" &&
         TIMESTAMP_PATTERN.test(timestamp)
     );
@@ -159,9 +203,6 @@ async function handleEntries(
     ctx: ExecutionContext,
     feed: string,
 ): Promise<Response> {
-    if (request.method !== "GET") {
-        return errorResponse(405, "method not allowed");
-    }
     if (!isFeedId(feed)) {
         return errorResponse(404, `unknown feed: ${feed}`);
     }
@@ -171,46 +212,25 @@ async function handleEntries(
     const cacheKeyRequest = new Request(
         new URL(`/api/entries/${feed}`, request.url),
     );
-    const cache = caches.default;
-    const cached = await cache.match(cacheKeyRequest);
-    if (cached) {
-        return cached;
-    }
-
-    try {
-        const response = await buildEntriesResponse(feed);
-        ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
-        return response;
-    } catch (err) {
-        console.error("entries request failed", err);
-        return errorResponse(502, "upstream request failed");
-    }
+    return withUpstreamErrorHandling("entries", () =>
+        cachedJson(cacheKeyRequest, ctx, CACHE_TTL_SECONDS, () =>
+            buildEntries(feed),
+        ),
+    );
 }
 
 /** Returns the cached-or-freshly-fetched bookmark listing for an entry. Both
  *  the bookmark and the star endpoint go through here, so a page view costs at
  *  most one upstream call for the listing. */
-async function loadBookmarkEntry(
+function loadBookmarkEntry(
     request: Request,
     ctx: ExecutionContext,
     target: string,
 ): Promise<Response> {
     const cacheKeyRequest = apiCacheKey(request, "/api/bookmarks", target);
-    const cache = caches.default;
-    const cached = await cache.match(cacheKeyRequest);
-    if (cached) {
-        return cached;
-    }
-
-    const entry = await fetchBookmarkEntry(target);
-    const response = new Response(JSON.stringify(entry), {
-        headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": `public, max-age=${BOOKMARKS_CACHE_TTL_SECONDS}`,
-        },
-    });
-    ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
-    return response;
+    return cachedJson(cacheKeyRequest, ctx, BOOKMARKS_CACHE_TTL_SECONDS, () =>
+        fetchBookmarkEntry(target),
+    );
 }
 
 async function handleBookmarks(
@@ -218,20 +238,28 @@ async function handleBookmarks(
     ctx: ExecutionContext,
     url: URL,
 ): Promise<Response> {
-    if (request.method !== "GET") {
-        return errorResponse(405, "method not allowed");
-    }
     const target = entryUrlParam(url);
     if (!target) {
         return errorResponse(400, "invalid url");
     }
 
-    try {
-        return await loadBookmarkEntry(request, ctx, target);
-    } catch (err) {
-        console.error("bookmarks request failed", err);
-        return errorResponse(502, "upstream request failed");
-    }
+    return withUpstreamErrorHandling("bookmarks", () =>
+        loadBookmarkEntry(request, ctx, target),
+    );
+}
+
+async function countStarsFor(
+    request: Request,
+    ctx: ExecutionContext,
+    target: string,
+): Promise<StarCountsResponse> {
+    const entryResponse = await loadBookmarkEntry(request, ctx, target);
+    const entry = (await entryResponse.json()) as HatenaJsonliteResponse | null;
+    const stars =
+        entry && URL_SAFE_TOKEN_PATTERN.test(entry.eid)
+            ? await fetchStarCounts(entry.eid, starQueriesFor(entry.bookmarks))
+            : {};
+    return { stars };
 }
 
 async function handleStars(
@@ -239,9 +267,6 @@ async function handleStars(
     ctx: ExecutionContext,
     url: URL,
 ): Promise<Response> {
-    if (request.method !== "GET") {
-        return errorResponse(405, "method not allowed");
-    }
     const target = entryUrlParam(url);
     if (!target) {
         return errorResponse(400, "invalid url");
@@ -251,37 +276,11 @@ async function handleStars(
     // look up are derived here rather than supplied by the caller — so the
     // cache key describes the response exactly.
     const cacheKeyRequest = apiCacheKey(request, "/api/stars", target);
-    const cache = caches.default;
-    const cached = await cache.match(cacheKeyRequest);
-    if (cached) {
-        return cached;
-    }
-
-    try {
-        const entryResponse = await loadBookmarkEntry(request, ctx, target);
-        const entry =
-            (await entryResponse.json()) as HatenaJsonliteResponse | null;
-        const stars =
-            entry && EID_PATTERN.test(entry.eid)
-                ? await fetchStarCounts(
-                      entry.eid,
-                      starQueriesFor(entry.bookmarks),
-                  )
-                : {};
-
-        const body: StarCountsResponse = { stars };
-        const response = new Response(JSON.stringify(body), {
-            headers: {
-                "Content-Type": "application/json",
-                "Cache-Control": `public, max-age=${STAR_CACHE_TTL_SECONDS}`,
-            },
-        });
-        ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
-        return response;
-    } catch (err) {
-        console.error("star request failed", err);
-        return errorResponse(502, "upstream request failed");
-    }
+    return withUpstreamErrorHandling("star", () =>
+        cachedJson(cacheKeyRequest, ctx, STAR_CACHE_TTL_SECONDS, () =>
+            countStarsFor(request, ctx, target),
+        ),
+    );
 }
 
 async function route(
@@ -293,15 +292,17 @@ async function route(
 
     const entriesMatch = url.pathname.match(/^\/api\/entries\/([^/]+)$/);
     if (entriesMatch) {
-        return handleEntries(request, ctx, entriesMatch[1]);
+        return requireGet(request, () =>
+            handleEntries(request, ctx, entriesMatch[1]),
+        );
     }
 
     if (url.pathname === "/api/bookmarks") {
-        return handleBookmarks(request, ctx, url);
+        return requireGet(request, () => handleBookmarks(request, ctx, url));
     }
 
     if (url.pathname === "/api/stars") {
-        return handleStars(request, ctx, url);
+        return requireGet(request, () => handleStars(request, ctx, url));
     }
 
     return env.ASSETS.fetch(request);
