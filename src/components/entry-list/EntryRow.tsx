@@ -172,7 +172,7 @@ export function EntryRow({
                 }}
                 className={`flex w-full flex-wrap items-start gap-3 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 ${
                     removing ? "" : "cursor-pointer"
-                } ${read ? "opacity-50" : ""} ${
+                } ${read ? "opacity-60" : ""} ${
                     focused ? "ring-2 ring-blue-500 ring-inset" : ""
                 }`}
             >
