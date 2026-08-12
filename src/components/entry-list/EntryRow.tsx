@@ -22,11 +22,11 @@ import { entryPath } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
 import { CategoryBadge } from "../common/CategoryBadge";
+import { EntrySummary } from "../common/EntrySummary";
 import { FaviconImg } from "../common/FaviconImg";
 import { IconButton, iconButtonClass } from "../common/IconButton";
 import { NewBadge } from "../common/NewBadge";
 import { RelativeTime } from "../common/RelativeTime";
-import { Thumbnail } from "../common/Thumbnail";
 
 const CONFIRM_TIMEOUT_MS = 3000;
 const SEEN_VISIBILITY_THRESHOLD = 0.5;
@@ -182,31 +182,24 @@ export function EntryRow({
                     focused ? "ring-2 ring-blue-500 ring-inset" : ""
                 }`}
             >
-                <Thumbnail src={entry.imageUrl} />
-                <div className="min-w-0 flex-1">
-                    <button
-                        type="button"
-                        onClick={() => navigate(entryPath(entry.url))}
-                        className="block text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
-                    >
-                        {entry.title}
-                    </button>
-                    {entry.description && (
-                        <p className="mt-1 line-clamp-2 text-gray-500 text-sm dark:text-gray-400">
-                            {entry.description}
-                        </p>
-                    )}
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-gray-500 text-xs dark:text-gray-400">
-                        <span>{entry.bookmarkCount} users</span>
-                        <FaviconImg domain={domain} />
-                        <span>{domain}</span>
-                        {entry.category && (
-                            <CategoryBadge category={entry.category} />
-                        )}
-                        <RelativeTime date={entry.date} />
-                        {isNew && <NewBadge />}
-                    </div>
-                </div>
+                <EntrySummary
+                    title={entry.title}
+                    description={entry.description}
+                    imageUrl={entry.imageUrl}
+                    onTitleClick={() => navigate(entryPath(entry.url))}
+                    metaRow={
+                        <>
+                            <span>{entry.bookmarkCount} users</span>
+                            <FaviconImg domain={domain} />
+                            <span>{domain}</span>
+                            {entry.category && (
+                                <CategoryBadge category={entry.category} />
+                            )}
+                            <RelativeTime date={entry.date} />
+                            {isNew && <NewBadge />}
+                        </>
+                    }
+                />
                 <div className="flex w-full justify-end gap-1 sm:w-auto sm:flex-col">
                     <a
                         href={safeExternalUrl(entry.url)}

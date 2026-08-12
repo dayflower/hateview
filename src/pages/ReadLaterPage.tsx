@@ -1,7 +1,7 @@
 import { ExternalLink, X } from "lucide-react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
+import { EntrySummary } from "../components/common/EntrySummary";
 import { iconButtonClass } from "../components/common/IconButton";
-import { Thumbnail } from "../components/common/Thumbnail";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { safeExternalUrl } from "../lib/url/externalUrl";
 import { entryPath } from "../router/routes";
@@ -28,29 +28,24 @@ export function ReadLaterPage() {
                         key={entry.url}
                         className="flex flex-wrap items-start gap-3 border-gray-200 border-b py-3 dark:border-gray-800"
                     >
-                        <Thumbnail src={entry.imageUrl} />
-                        <div className="min-w-0 flex-1">
-                            <button
-                                type="button"
-                                onClick={() => navigate(entryPath(entry.url))}
-                                className="block text-left font-medium text-blue-700 hover:underline dark:text-blue-400"
-                            >
-                                {entry.title}
-                            </button>
-                            {entry.description && (
-                                <p className="mt-1 line-clamp-2 text-gray-500 text-sm dark:text-gray-400">
-                                    {entry.description}
-                                </p>
-                            )}
-                            <div className="mt-1 flex flex-wrap items-center gap-2 text-gray-500 text-xs dark:text-gray-400">
-                                {entry.bookmarkCount !== undefined && (
-                                    <span>{entry.bookmarkCount} users</span>
-                                )}
-                                {entry.category && (
-                                    <CategoryBadge category={entry.category} />
-                                )}
-                            </div>
-                        </div>
+                        <EntrySummary
+                            title={entry.title}
+                            description={entry.description}
+                            imageUrl={entry.imageUrl}
+                            onTitleClick={() => navigate(entryPath(entry.url))}
+                            metaRow={
+                                <>
+                                    {entry.bookmarkCount !== undefined && (
+                                        <span>{entry.bookmarkCount} users</span>
+                                    )}
+                                    {entry.category && (
+                                        <CategoryBadge
+                                            category={entry.category}
+                                        />
+                                    )}
+                                </>
+                            }
+                        />
                         <div className="flex w-full justify-end gap-1 sm:w-auto">
                             <a
                                 href={safeExternalUrl(entry.url)}
