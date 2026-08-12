@@ -149,8 +149,15 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 <ArrowLeft className="size-4" />
                 戻る
             </button>
-            <h1 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-                {state.data.title}
+            <h1 className="font-semibold text-lg">
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-900 hover:underline dark:text-gray-100"
+                >
+                    {state.data.title}
+                </a>
             </h1>
             <p className="mt-1 font-bold text-rose-500 text-sm dark:text-rose-400">
                 {state.data.count} users
