@@ -1,4 +1,5 @@
 import type { HatenaBookmark } from "../../types/bookmark";
+import { LinkifiedText } from "../common/LinkifiedText";
 import { RelativeTime } from "../common/RelativeTime";
 import { UserAvatar } from "../common/UserAvatar";
 
@@ -18,7 +19,9 @@ export function BookmarkItem({ bookmark }: BookmarkItemProps) {
                     </span>
                 </div>
                 {bookmark.comment && (
-                    <p className="mt-1 text-sm">{bookmark.comment}</p>
+                    <p className="mt-1 text-sm">
+                        <LinkifiedText text={bookmark.comment} />
+                    </p>
                 )}
                 {bookmark.tags.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
