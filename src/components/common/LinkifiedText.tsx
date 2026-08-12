@@ -16,7 +16,7 @@ export function LinkifiedText({ text }: LinkifiedTextProps) {
                         href={segment.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-700 hover:underline dark:text-blue-400"
+                        className="break-all text-blue-700 hover:underline dark:text-blue-400"
                     >
                         {segment.text}
                     </a>
