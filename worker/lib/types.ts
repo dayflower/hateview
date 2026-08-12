@@ -1,6 +1,16 @@
 import type { EntriesFile, Entry, FeedId } from "../../src/types/entry.ts";
+import type {
+    BookmarkStarQuery,
+    StarCountsResponse,
+} from "../../src/types/star.ts";
 
-export type { EntriesFile, Entry, FeedId };
+export type {
+    BookmarkStarQuery,
+    EntriesFile,
+    Entry,
+    FeedId,
+    StarCountsResponse,
+};
 
 export interface RawFeedItem {
     url: string;

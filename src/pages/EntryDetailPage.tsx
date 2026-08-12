@@ -8,8 +8,11 @@ import {
 import { useEffect, useState } from "react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { HideRuleModal } from "../components/common/HideRuleModal";
+import { PillTabBar } from "../components/common/PillTabBar";
 import { Thumbnail } from "../components/common/Thumbnail";
+import type { BookmarkSortOrder } from "../components/entry-detail/BookmarkList";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
+import { fetchStarCounts } from "../lib/api/hatenaStarApi";
 import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
@@ -22,6 +25,11 @@ import {
     writeHideNoComment,
 } from "../lib/storage/hideNoComment";
 import type { HatenaJsonliteResponse } from "../types/bookmark";
+
+const SORT_ORDER_OPTIONS: { id: BookmarkSortOrder; label: string }[] = [
+    { id: "new", label: "新着順" },
+    { id: "star", label: "スター数順" },
+];
 
 interface EntryDetailPageProps {
     url: string;
@@ -42,7 +50,9 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         error: null,
     });
     const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
+    const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("new");
     const [hideModalOpen, setHideModalOpen] = useState(false);
+    const [stars, setStars] = useState<Record<string, number> | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -69,6 +79,38 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             cancelled = true;
         };
     }, [url, markRead]);
+
+    useEffect(() => {
+        // Star counts are only needed for the "star" sort order, and
+        // fetching them is comparatively slow, so defer the request until
+        // the user actually asks for that order, then cache the result.
+        if (!state.data || sortOrder !== "star" || stars !== null) {
+            return;
+        }
+        let cancelled = false;
+        const { eid, bookmarks } = state.data;
+
+        fetchStarCounts(
+            eid,
+            bookmarks.map((bookmark) => ({
+                user: bookmark.user,
+                timestamp: bookmark.timestamp,
+            })),
+        )
+            .then((counts) => {
+                if (!cancelled) {
+                    setStars(counts);
+                }
+            })
+            .catch(() => {
+                // Star counts are a non-essential enhancement; comments
+                // remain fully usable without them.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [state.data, sortOrder, stars]);
 
     if (state.loading) {
         return (
@@ -193,8 +235,20 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 </span>
                 コメントのない人を隠す
             </label>
+            <div className="mt-3">
+                <PillTabBar
+                    options={SORT_ORDER_OPTIONS}
+                    selected={sortOrder}
+                    onSelect={setSortOrder}
+                    ariaLabel="コメントの並び順"
+                />
+            </div>
             <div className="mt-4">
-                <BookmarkList bookmarks={bookmarks} />
+                <BookmarkList
+                    bookmarks={bookmarks}
+                    stars={stars ?? {}}
+                    sortOrder={sortOrder}
+                />
             </div>
             {hideModalOpen && (
                 <HideRuleModal

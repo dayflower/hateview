@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import type { HatenaBookmark } from "../../types/bookmark";
 import { LinkifiedText } from "../common/LinkifiedText";
 import { RelativeTime } from "../common/RelativeTime";
@@ -5,9 +6,10 @@ import { UserAvatar } from "../common/UserAvatar";
 
 interface BookmarkItemProps {
     bookmark: HatenaBookmark;
+    starCount?: number;
 }
 
-export function BookmarkItem({ bookmark }: BookmarkItemProps) {
+export function BookmarkItem({ bookmark, starCount }: BookmarkItemProps) {
     return (
         <li className="flex gap-2 border-gray-200 border-b py-3 dark:border-gray-800">
             <UserAvatar user={bookmark.user} />
@@ -19,6 +21,12 @@ export function BookmarkItem({ bookmark }: BookmarkItemProps) {
                     <span className="text-gray-500 text-xs dark:text-gray-400">
                         <RelativeTime date={bookmark.timestamp} />
                     </span>
+                    {!!starCount && (
+                        <span className="inline-flex items-center gap-0.5 text-amber-600 text-xs dark:text-amber-400">
+                            <Star className="size-3 fill-current" />
+                            {starCount}
+                        </span>
+                    )}
                 </div>
                 {bookmark.comment && (
                     <p className="mt-1 text-gray-900 text-sm dark:text-gray-100">
