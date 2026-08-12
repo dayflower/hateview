@@ -1,6 +1,6 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useEscapeKey } from "../../lib/hooks/useEscapeKey";
-import { useHideRules } from "../../lib/hooks/useHideRules.tsx";
+import { HideRuleForm } from "./HideRuleForm";
 
 interface HideRuleModalProps {
     initialDomain: string;
@@ -13,9 +13,6 @@ export function HideRuleModal({
     initialTitle,
     onClose,
 }: HideRuleModalProps) {
-    const { addRule } = useHideRules();
-    const [domain, setDomain] = useState(initialDomain);
-    const [titleGlob, setTitleGlob] = useState(initialTitle);
     const domainInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -23,20 +20,6 @@ export function HideRuleModal({
     }, []);
 
     useEscapeKey(onClose);
-
-    const handleSubmit = (event: FormEvent) => {
-        event.preventDefault();
-        const trimmedDomain = domain.trim();
-        const trimmedGlob = titleGlob.trim();
-        if (!trimmedDomain && !trimmedGlob) {
-            return;
-        }
-        addRule({
-            domain: trimmedDomain || undefined,
-            titleGlob: trimmedGlob || undefined,
-        });
-        onClose();
-    };
 
     return (
         // biome-ignore lint/a11y/noStaticElementInteractions: overlay click-to-close is a mouse convenience; Escape key and the cancel button provide keyboard-accessible equivalents
@@ -59,51 +42,33 @@ export function HideRuleModal({
                 >
                     非表示条件を登録
                 </h2>
-                <p className="mt-1 text-gray-500 text-sm dark:text-gray-400">
-                    ドメインとタイトルの glob
-                    パターン(両方指定した場合は両方一致で非表示)。
-                </p>
-                <form
-                    onSubmit={handleSubmit}
-                    className="mt-3 flex flex-col gap-2"
-                >
-                    <label className="flex flex-col gap-1 text-gray-700 text-sm dark:text-gray-300">
-                        ドメイン
-                        <input
-                            ref={domainInputRef}
-                            type="text"
-                            value={domain}
-                            onChange={(event) => setDomain(event.target.value)}
-                            className="rounded border border-gray-300 px-2 py-1 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-                        />
-                    </label>
-                    <label className="flex flex-col gap-1 text-gray-700 text-sm dark:text-gray-300">
-                        タイトル(glob パターン)
-                        <input
-                            type="text"
-                            value={titleGlob}
-                            onChange={(event) =>
-                                setTitleGlob(event.target.value)
-                            }
-                            className="rounded border border-gray-300 px-2 py-1 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-                        />
-                    </label>
-                    <div className="mt-2 flex justify-end gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
-                        >
-                            キャンセル
-                        </button>
-                        <button
-                            type="submit"
-                            className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
-                        >
-                            登録
-                        </button>
-                    </div>
-                </form>
+                <HideRuleForm
+                    initialDomain={initialDomain}
+                    initialTitleGlob={initialTitle}
+                    domainInputRef={domainInputRef}
+                    descriptionClassName="mt-1 text-gray-500 text-sm dark:text-gray-400"
+                    formClassName="mt-3 flex flex-col gap-2"
+                    labelClassName="flex flex-col gap-1 text-gray-700 text-sm dark:text-gray-300"
+                    inputClassName="rounded border border-gray-300 px-2 py-1 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                    onSubmitted={onClose}
+                    footer={
+                        <div className="mt-2 flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                type="submit"
+                                className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+                            >
+                                登録
+                            </button>
+                        </div>
+                    }
+                />
             </div>
         </div>
     );
