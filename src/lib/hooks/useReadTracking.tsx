@@ -4,7 +4,8 @@ import {
     useCallback,
     useContext,
     useEffect,
-    useReducer,
+    useMemo,
+    useState,
 } from "react";
 import * as readTrackingStore from "../storage/readTracking";
 
@@ -19,14 +20,18 @@ const ReadTrackingContext = createContext<ReadTrackingContextValue | null>(
 );
 
 export function ReadTrackingProvider({ children }: { children: ReactNode }) {
-    const [, forceUpdate] = useReducer((count: number) => count + 1, 0);
-
-    useEffect(() => {
+    const [readUrls, setReadUrls] = useState<ReadonlySet<string>>(() => {
         readTrackingStore.pruneOldReadRecords();
+        return readTrackingStore.listReadUrls();
+    });
+
+    // A visible tab may be stale relative to changes another tab made to the
+    // same localStorage keys, so re-sync the in-memory mirror on return.
+    useEffect(() => {
         const onVisibilityChange = () => {
             if (document.visibilityState === "visible") {
                 readTrackingStore.pruneOldReadRecords();
-                forceUpdate();
+                setReadUrls(readTrackingStore.listReadUrls());
             }
         };
         document.addEventListener("visibilitychange", onVisibilityChange);
@@ -37,29 +42,31 @@ export function ReadTrackingProvider({ children }: { children: ReactNode }) {
             );
     }, []);
 
-    // isRead/markRead keep a stable identity across renders (empty deps) so effects
-    // that depend on them (e.g. EntryDetailPage's fetch effect) don't re-fire on every
-    // provider re-render — only forceUpdate() should trigger consumers to re-read state.
-    const isRead = useCallback(
-        (url: string) => readTrackingStore.isRead(url),
-        [],
-    );
+    // markRead/markUnread keep a stable identity across renders (empty deps) so
+    // effects that depend on them (e.g. EntryDetailPage's fetch effect) don't
+    // re-fire on every provider re-render.
     const markRead = useCallback((url: string) => {
-        if (readTrackingStore.isRead(url)) {
-            return;
-        }
         readTrackingStore.markRead(url);
-        forceUpdate();
+        setReadUrls((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
     }, []);
     const markUnread = useCallback((url: string) => {
-        if (!readTrackingStore.isRead(url)) {
-            return;
-        }
         readTrackingStore.markUnread(url);
-        forceUpdate();
+        setReadUrls((prev) => {
+            if (!prev.has(url)) {
+                return prev;
+            }
+            const next = new Set(prev);
+            next.delete(url);
+            return next;
+        });
     }, []);
 
-    const value: ReadTrackingContextValue = { isRead, markRead, markUnread };
+    const isRead = useCallback((url: string) => readUrls.has(url), [readUrls]);
+
+    const value = useMemo<ReadTrackingContextValue>(
+        () => ({ isRead, markRead, markUnread }),
+        [isRead, markRead, markUnread],
+    );
 
     return (
         <ReadTrackingContext.Provider value={value}>

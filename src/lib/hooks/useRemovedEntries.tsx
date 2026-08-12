@@ -3,8 +3,8 @@ import {
     type ReactNode,
     useCallback,
     useContext,
-    useEffect,
-    useReducer,
+    useMemo,
+    useState,
 } from "react";
 import * as removedEntriesStore from "../storage/removedEntries";
 
@@ -18,24 +18,29 @@ const RemovedEntriesContext = createContext<RemovedEntriesContextValue | null>(
 );
 
 export function RemovedEntriesProvider({ children }: { children: ReactNode }) {
-    const [, forceUpdate] = useReducer((count: number) => count + 1, 0);
-
-    useEffect(() => {
+    const [removedUrls, setRemovedUrls] = useState<ReadonlySet<string>>(() => {
         removedEntriesStore.pruneOldRemovedRecords();
-    }, []);
+        return removedEntriesStore.listRemovedUrls();
+    });
 
-    // Stable identities (empty deps) so effects/memos elsewhere don't re-run on every
-    // provider re-render — see useReadTracking.tsx for why this matters.
-    const isRemoved = useCallback(
-        (url: string) => removedEntriesStore.isRemoved(url),
-        [],
-    );
+    // removeEntry keeps a stable identity across renders (empty deps) — see
+    // useReadTracking.tsx for why this matters.
     const removeEntry = useCallback((url: string) => {
         removedEntriesStore.removeEntry(url);
-        forceUpdate();
+        setRemovedUrls((prev) =>
+            prev.has(url) ? prev : new Set(prev).add(url),
+        );
     }, []);
 
-    const value: RemovedEntriesContextValue = { isRemoved, removeEntry };
+    const isRemoved = useCallback(
+        (url: string) => removedUrls.has(url),
+        [removedUrls],
+    );
+
+    const value = useMemo<RemovedEntriesContextValue>(
+        () => ({ isRemoved, removeEntry }),
+        [isRemoved, removeEntry],
+    );
 
     return (
         <RemovedEntriesContext.Provider value={value}>

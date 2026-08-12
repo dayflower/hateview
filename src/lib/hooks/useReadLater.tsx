@@ -3,6 +3,7 @@ import {
     type ReactNode,
     useCallback,
     useContext,
+    useMemo,
     useState,
 } from "react";
 import type { ReadLaterEntry, ReadLaterSnapshot } from "../storage/readLater";
@@ -34,15 +35,21 @@ export function ReadLaterProvider({ children }: { children: ReactNode }) {
         setEntries(readLaterStore.list());
     }, []);
 
-    // `entries` changing already gives the provider's context `value` object a new
-    // identity each mutation, which is what causes consumers to re-render; `isMarked`
-    // itself can stay referentially stable and just read fresh state when called.
+    // Derived from the already-in-memory `entries`, rather than re-reading
+    // localStorage on every call.
+    const markedUrls = useMemo(
+        () => new Set(entries.map((entry) => entry.url)),
+        [entries],
+    );
     const isMarked = useCallback(
-        (url: string) => readLaterStore.isMarked(url),
-        [],
+        (url: string) => markedUrls.has(url),
+        [markedUrls],
     );
 
-    const value: ReadLaterContextValue = { entries, isMarked, toggle, remove };
+    const value = useMemo<ReadLaterContextValue>(
+        () => ({ entries, isMarked, toggle, remove }),
+        [entries, isMarked, toggle, remove],
+    );
 
     return (
         <ReadLaterContext.Provider value={value}>

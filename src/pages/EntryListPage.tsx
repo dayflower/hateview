@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HideRuleModal } from "../components/common/HideRuleModal";
 import type { CategoryFilter } from "../components/entry-list/CategoryFilterBar";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
@@ -27,13 +27,16 @@ export function EntryListPage() {
         setFocusedIndex(-1);
     };
 
-    // Not memoized: isHidden/isRemoved intentionally keep a stable identity across
-    // renders (see their hooks), so a useMemo here would miss updates whenever the
-    // underlying storage changes without those identities changing. The entry count
-    // is small enough that recomputing this on every render is inexpensive.
-    const visibleEntries = entries
-        .filter((entry) => !isHidden(entry))
-        .filter((entry) => !isRemoved(entry.url));
+    // isHidden/isRemoved change identity whenever the underlying hide-rule or
+    // removed-entry state changes, so this memo correctly recomputes exactly
+    // when the visible set can change.
+    const visibleEntries = useMemo(
+        () =>
+            entries
+                .filter((entry) => !isHidden(entry))
+                .filter((entry) => !isRemoved(entry.url)),
+        [entries, isHidden, isRemoved],
+    );
 
     useEffect(() => {
         if (focusedIndex >= 0) {

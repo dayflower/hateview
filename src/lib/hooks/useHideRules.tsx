@@ -3,6 +3,7 @@ import {
     type ReactNode,
     useCallback,
     useContext,
+    useMemo,
     useState,
 } from "react";
 import type {
@@ -38,18 +39,17 @@ export function HideRulesProvider({ children }: { children: ReactNode }) {
         setRules(hideRulesStore.listRules());
     }, []);
 
+    // Derived from the already-in-memory `rules`, rather than re-reading
+    // localStorage on every call.
     const isHidden = useCallback(
-        (entry: HideableEntry) =>
-            hideRulesStore.isHidden(entry, hideRulesStore.listRules()),
-        [],
+        (entry: HideableEntry) => hideRulesStore.isHidden(entry, rules),
+        [rules],
     );
 
-    const value: HideRulesContextValue = {
-        rules,
-        addRule,
-        removeRule,
-        isHidden,
-    };
+    const value = useMemo<HideRulesContextValue>(
+        () => ({ rules, addRule, removeRule, isHidden }),
+        [rules, addRule, removeRule, isHidden],
+    );
 
     return (
         <HideRulesContext.Provider value={value}>
