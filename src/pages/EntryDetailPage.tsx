@@ -17,6 +17,7 @@ import {
     fetchEntryBookmarks,
 } from "../lib/api/hatenaBookmarkApi";
 import { fetchStarCounts } from "../lib/api/hatenaStarApi";
+import { useAsyncData } from "../lib/hooks/useAsyncData";
 import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
@@ -25,7 +26,6 @@ import {
     writeHideNoComment,
 } from "../lib/storage/hideNoComment";
 import { safeExternalUrl } from "../lib/url/externalUrl";
-import type { HatenaJsonliteResponse } from "../types/bookmark";
 
 const SORT_ORDER_OPTIONS: { id: BookmarkSortOrder; label: string }[] = [
     { id: "new", label: "新着順" },
@@ -36,50 +36,20 @@ interface EntryDetailPageProps {
     url: string;
 }
 
-interface DetailState {
-    data: HatenaJsonliteResponse | null;
-    loading: boolean;
-    error: string | null;
-}
-
 export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const { markRead } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
-    const [state, setState] = useState<DetailState>({
-        data: null,
-        loading: true,
-        error: null,
-    });
+    const state = useAsyncData(() => fetchEntryBookmarks(url), [url]);
     const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
     const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("new");
     const [hideModalOpen, setHideModalOpen] = useState(false);
     const [stars, setStars] = useState<Record<string, number> | null>(null);
 
     useEffect(() => {
-        let cancelled = false;
-        setState({ data: null, loading: true, error: null });
-
-        fetchEntryBookmarks(url)
-            .then((data) => {
-                if (!cancelled) {
-                    setState({ data, loading: false, error: null });
-                    markRead(url);
-                }
-            })
-            .catch((err: unknown) => {
-                if (!cancelled) {
-                    setState({
-                        data: null,
-                        loading: false,
-                        error: err instanceof Error ? err.message : String(err),
-                    });
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [url, markRead]);
+        if (state.data) {
+            markRead(url);
+        }
+    }, [state.data, url, markRead]);
 
     useEffect(() => {
         // Star counts are only needed for the "star" sort order, and

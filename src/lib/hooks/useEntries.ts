@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Entry, FeedId } from "../../types/entry";
+import { apiGet } from "../api/apiClient";
 import {
     getNewUrls,
     markUrlSeen,
@@ -59,14 +60,8 @@ export function useEntries(feed: FeedId): EntriesState {
             error: null,
         });
         pruneOldSeenRecords();
-        fetch(`${import.meta.env.BASE_URL}api/entries/${feed}`)
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(`entries fetch failed: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then((data: { entries: Entry[] }) => {
+        apiGet<{ entries: Entry[] }>(`api/entries/${feed}`)
+            .then((data) => {
                 if (cancelled) {
                     return;
                 }
