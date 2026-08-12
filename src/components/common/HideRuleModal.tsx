@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useEscapeKey } from "../../lib/hooks/useEscapeKey";
 import { useHideRules } from "../../lib/hooks/useHideRules.tsx";
 
 interface HideRuleModalProps {
@@ -21,15 +22,7 @@ export function HideRuleModal({
         domainInputRef.current?.focus();
     }, []);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                onClose();
-            }
-        };
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [onClose]);
+    useEscapeKey(onClose);
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();

@@ -8,8 +8,10 @@ import {
     MoreVertical,
     Trash2,
 } from "lucide-react";
-import { type MouseEvent, useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useConfirmAction } from "../../lib/hooks/useConfirmAction";
+import { useDropdownMenu } from "../../lib/hooks/useDropdownMenu";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../../lib/hooks/useRemovedEntries.tsx";
@@ -53,63 +55,6 @@ export function EntryRow({
     const read = isRead(entry.url);
     const marked = isMarked(entry.url);
 
-    const [confirmingDelete, setConfirmingDelete] = useState(false);
-    const confirmTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-        undefined,
-    );
-
-    useEffect(() => () => clearTimeout(confirmTimeoutRef.current), []);
-
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [menuPosition, setMenuPosition] = useState<{
-        top: number;
-        right: number;
-    } | null>(null);
-    const menuButtonRef = useRef<HTMLButtonElement>(null);
-    const menuContentRef = useRef<HTMLDivElement>(null);
-
-    const openMenu = () => {
-        const rect = menuButtonRef.current?.getBoundingClientRect();
-        if (rect) {
-            setMenuPosition({
-                top: rect.bottom + 4,
-                right: window.innerWidth - rect.right,
-            });
-        }
-        setMenuOpen(true);
-    };
-
-    // The row's <li> clips overflow for the swipe-to-delete animation, so the
-    // dropdown is portaled to <body> and fixed-positioned instead of nested inside it.
-    useEffect(() => {
-        if (!menuOpen) {
-            return;
-        }
-        const closeMenu = (event: Event) => {
-            const target = event.target as Node;
-            if (menuButtonRef.current?.contains(target)) {
-                return;
-            }
-            if (menuContentRef.current?.contains(target)) {
-                return;
-            }
-            setMenuOpen(false);
-        };
-        const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setMenuOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", closeMenu);
-        document.addEventListener("keydown", closeOnEscape);
-        window.addEventListener("scroll", closeMenu, true);
-        return () => {
-            document.removeEventListener("mousedown", closeMenu);
-            document.removeEventListener("keydown", closeOnEscape);
-            window.removeEventListener("scroll", closeMenu, true);
-        };
-    }, [menuOpen]);
-
     const {
         liRef,
         liStyle,
@@ -122,6 +67,18 @@ export function EntryRow({
     } = useRowRemoval({
         onRemove: () => removeEntry(entry.url),
     });
+
+    const { confirming: confirmingDelete, trigger: triggerDeleteConfirm } =
+        useConfirmAction(triggerRemoval, CONFIRM_TIMEOUT_MS);
+
+    const {
+        open: menuOpen,
+        position: menuPosition,
+        buttonRef: menuButtonRef,
+        contentRef: menuContentRef,
+        toggle: toggleMenu,
+        close: closeMenu,
+    } = useDropdownMenu();
 
     const handleCardClick = () => {
         if (wasDragged()) {
@@ -137,16 +94,14 @@ export function EntryRow({
 
     const handleTrashClick = (event: MouseEvent) => {
         stop(event);
-        if (confirmingDelete) {
-            clearTimeout(confirmTimeoutRef.current);
-            triggerRemoval();
-            return;
+        triggerDeleteConfirm();
+    };
+
+    const handleMenuTrashClick = (event: MouseEvent) => {
+        stop(event);
+        if (triggerDeleteConfirm()) {
+            closeMenu();
         }
-        setConfirmingDelete(true);
-        confirmTimeoutRef.current = setTimeout(
-            () => setConfirmingDelete(false),
-            CONFIRM_TIMEOUT_MS,
-        );
     };
 
     const rowElRef = useRef<HTMLLIElement | null>(null);
@@ -334,11 +289,7 @@ export function EntryRow({
                         aria-expanded={menuOpen}
                         onClick={(event) => {
                             stop(event);
-                            if (menuOpen) {
-                                setMenuOpen(false);
-                            } else {
-                                openMenu();
-                            }
+                            toggleMenu();
                         }}
                         className={`hidden sm:flex ${iconButtonClass} sm:size-9`}
                     >
@@ -361,7 +312,7 @@ export function EntryRow({
                                     role="menuitem"
                                     onClick={(event) => {
                                         stop(event);
-                                        setMenuOpen(false);
+                                        closeMenu();
                                         toggle({
                                             url: entry.url,
                                             title: entry.title,
@@ -388,7 +339,7 @@ export function EntryRow({
                                     role="menuitem"
                                     onClick={(event) => {
                                         stop(event);
-                                        setMenuOpen(false);
+                                        closeMenu();
                                         onRequestHide(entry);
                                     }}
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -399,13 +350,7 @@ export function EntryRow({
                                 <button
                                     type="button"
                                     role="menuitem"
-                                    onClick={(event) => {
-                                        const wasConfirming = confirmingDelete;
-                                        handleTrashClick(event);
-                                        if (wasConfirming) {
-                                            setMenuOpen(false);
-                                        }
-                                    }}
+                                    onClick={handleMenuTrashClick}
                                     className={`flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 ${
                                         confirmingDelete
                                             ? "text-red-600 dark:text-red-400"
