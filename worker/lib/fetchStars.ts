@@ -2,9 +2,15 @@ import type {
     BookmarkStarQuery,
     HatenaStar,
     HatenaStarEntriesResponse,
+    HatenaStarEntry,
 } from "../../src/types/star.ts";
 
 const STAR_API_URL = "https://s.hatena.ne.jp/entries.json";
+
+/** Upper bound on how many bookmarks one entry is looked up for. */
+export const MAX_STAR_TARGETS = 500;
+/** How many uris are sent to Hatena's star API per upstream request. */
+export const STAR_CHUNK_SIZE = 100;
 
 export function buildStarUri(
     eid: string,
@@ -22,19 +28,32 @@ export function countStars(stars: (HatenaStar | number)[]): number {
     return stars.length;
 }
 
-export async function fetchStarCounts(
-    eid: string,
+/**
+ * Reduces the requested bookmarks to the set actually looked up: one entry per
+ * user, oldest first, capped at MAX_STAR_TARGETS. Early bookmarks collect the
+ * bulk of an entry's stars, so dropping the newest ones costs the least.
+ *
+ * The result depends only on the set of bookmarks, not on their order, which
+ * keeps the response stable across callers that pass the same entry.
+ */
+export function selectStarTargets(
     bookmarks: BookmarkStarQuery[],
-): Promise<Record<string, number>> {
-    if (bookmarks.length === 0) {
-        return {};
-    }
-
-    const uriToUser = new Map<string, string>();
-    const body = new URLSearchParams();
+): BookmarkStarQuery[] {
+    const oldestPerUser = new Map<string, BookmarkStarQuery>();
     for (const bookmark of bookmarks) {
-        const uri = buildStarUri(eid, bookmark.user, bookmark.timestamp);
-        uriToUser.set(uri, bookmark.user);
+        const existing = oldestPerUser.get(bookmark.user);
+        if (!existing || bookmark.timestamp < existing.timestamp) {
+            oldestPerUser.set(bookmark.user, bookmark);
+        }
+    }
+    return [...oldestPerUser.values()]
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+        .slice(0, MAX_STAR_TARGETS);
+}
+
+async function fetchStarEntries(uris: string[]): Promise<HatenaStarEntry[]> {
+    const body = new URLSearchParams();
+    for (const uri of uris) {
         body.append("uri", uri);
     }
 
@@ -48,8 +67,39 @@ export async function fetchStarCounts(
     }
 
     const json = (await res.json()) as HatenaStarEntriesResponse;
+    return json.entries;
+}
+
+export async function fetchStarCounts(
+    eid: string,
+    bookmarks: BookmarkStarQuery[],
+): Promise<Record<string, number>> {
+    const targets = selectStarTargets(bookmarks);
+    if (targets.length === 0) {
+        return {};
+    }
+
+    const uriToUser = new Map<string, string>();
+    for (const bookmark of targets) {
+        uriToUser.set(
+            buildStarUri(eid, bookmark.user, bookmark.timestamp),
+            bookmark.user,
+        );
+    }
+
+    const uris = [...uriToUser.keys()];
+    const chunks: string[][] = [];
+    for (let i = 0; i < uris.length; i += STAR_CHUNK_SIZE) {
+        chunks.push(uris.slice(i, i + STAR_CHUNK_SIZE));
+    }
+
+    // A failed chunk fails the whole lookup on purpose: the caller does not
+    // cache an error, so the next request retries, whereas a partial result
+    // would be cached and serve missing star counts until it expires.
+    const entryLists = await Promise.all(chunks.map(fetchStarEntries));
+
     const result: Record<string, number> = {};
-    for (const entry of json.entries) {
+    for (const entry of entryLists.flat()) {
         const user = uriToUser.get(entry.uri);
         if (!user) {
             continue;

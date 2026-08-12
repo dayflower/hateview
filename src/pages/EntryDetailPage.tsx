@@ -90,12 +90,16 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         let cancelled = false;
         const { eid, bookmarks } = state.data;
 
+        // Silent bookmarks rarely attract stars, and they make up a large share
+        // of a hot entry's list, so skipping them keeps the lookup small.
         fetchStarCounts(
             eid,
-            bookmarks.map((bookmark) => ({
-                user: bookmark.user,
-                timestamp: bookmark.timestamp,
-            })),
+            bookmarks
+                .filter((bookmark) => bookmark.comment.trim() !== "")
+                .map((bookmark) => ({
+                    user: bookmark.user,
+                    timestamp: bookmark.timestamp,
+                })),
         )
             .then((counts) => {
                 if (!cancelled) {

@@ -130,4 +130,116 @@ describe("worker fetch handler", () => {
         expect(response.status).toBe(200);
         expect(fetch).toHaveBeenCalledTimes(1);
     });
+
+    it("ignores the query string when caching entries", async () => {
+        await call(new Request("https://hateview.example/api/entries/it?a=1"));
+        await Promise.all(pending);
+
+        const response = await call(
+            new Request("https://hateview.example/api/entries/it?a=2"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not leak upstream failure details", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => new Response("", { status: 503 })),
+        );
+
+        const response = await call(
+            new Request("https://hateview.example/api/entries/it"),
+        );
+
+        expect(response.status).toBe(502);
+        expect(await response.json()).toEqual({
+            error: "upstream request failed",
+        });
+    });
+
+    const starsRequest = (
+        eid: string,
+        bookmarks: unknown[],
+        headers?: HeadersInit,
+    ) =>
+        new Request(`https://hateview.example/api/stars/${eid}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ bookmarks }),
+        });
+
+    // A literal "/" is already excluded by the route pattern, but a
+    // percent-encoded one survives URL normalization and reaches the handler.
+    it("rejects a malformed entry id", async () => {
+        const response = await call(
+            starsRequest("%2F..%2Fevil", [
+                { user: "alice", timestamp: "2026/01/01 00:00" },
+            ]),
+        );
+
+        expect(response.status).toBe(400);
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("rejects an oversized star request before parsing it", async () => {
+        const response = await call(
+            starsRequest("1", [], {
+                "Content-Length": String(2 * 1024 * 1024),
+            }),
+        );
+
+        expect(response.status).toBe(413);
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("rejects a payload that is not a bookmark list", async () => {
+        const response = await call(
+            new Request("https://hateview.example/api/stars/1", {
+                method: "POST",
+                body: JSON.stringify({ bookmarks: "nope" }),
+            }),
+        );
+
+        expect(response.status).toBe(400);
+    });
+
+    it("drops malformed bookmarks instead of failing the request", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(
+                async () =>
+                    new Response(
+                        JSON.stringify({
+                            entries: [
+                                {
+                                    uri: "https://b.hatena.ne.jp/alice/20260101#bookmark-1",
+                                    stars: [{ name: "x", quote: "" }],
+                                },
+                            ],
+                        }),
+                    ),
+            ),
+        );
+
+        const response = await call(
+            starsRequest("1", [
+                { user: "alice", timestamp: "2026/01/01 00:00" },
+                { user: "b o b", timestamp: "2026/01/01 00:00" },
+                { user: "carol", timestamp: "not a timestamp" },
+                { user: "dave" },
+                null,
+            ]),
+        );
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ stars: { alice: 1 } });
+
+        const body = (vi.mocked(fetch).mock.calls[0][1] as RequestInit)
+            .body as string;
+        expect(new URLSearchParams(body).getAll("uri")).toEqual([
+            "https://b.hatena.ne.jp/alice/20260101#bookmark-1",
+        ]);
+    });
 });

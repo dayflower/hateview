@@ -22,6 +22,17 @@ const FEED_URLS: Record<FeedId, string> = {
 const CACHE_TTL_SECONDS = 10 * 60;
 const STAR_CACHE_TTL_SECONDS = 3 * 60;
 
+/** Hatena entry ids are numeric, but anything URL-safe is accepted so a change
+ *  in their format doesn't break the app — the point is to keep separators out
+ *  of the cache key and the star permalink built from it. */
+const EID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+const USER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+/** Hatena timestamps look like "2026/08/12 09:59"; only the date part is used. */
+const TIMESTAMP_PATTERN = /^\d{4}\/\d{2}\/\d{2}/;
+/** Far above a realistic request (500 bookmarks is roughly 20KB), so this only
+ *  rejects obvious abuse before the body is parsed. */
+const MAX_STAR_REQUEST_BYTES = 1024 * 1024;
+
 function isFeedId(value: string): value is FeedId {
     return value in FEED_URLS;
 }
@@ -52,6 +63,24 @@ function errorResponse(status: number, message: string): Response {
     });
 }
 
+function isBookmarkStarQuery(value: unknown): value is BookmarkStarQuery {
+    if (typeof value !== "object" || value === null) {
+        return false;
+    }
+    const { user, timestamp } = value as {
+        user?: unknown;
+        timestamp?: unknown;
+    };
+    return (
+        typeof user === "string" &&
+        USER_PATTERN.test(user) &&
+        typeof timestamp === "string" &&
+        TIMESTAMP_PATTERN.test(timestamp)
+    );
+}
+
+/** Star counts are a non-essential enhancement, so a malformed bookmark drops
+ *  just that bookmark; only a payload that isn't a bookmark list at all fails. */
 function parseBookmarkStarQueries(payload: unknown): BookmarkStarQuery[] {
     if (
         typeof payload !== "object" ||
@@ -60,17 +89,9 @@ function parseBookmarkStarQueries(payload: unknown): BookmarkStarQuery[] {
     ) {
         throw new Error("bookmarks must be an array");
     }
-    return (payload as { bookmarks: unknown[] }).bookmarks.map((entry) => {
-        if (
-            typeof entry !== "object" ||
-            entry === null ||
-            typeof (entry as { user?: unknown }).user !== "string" ||
-            typeof (entry as { timestamp?: unknown }).timestamp !== "string"
-        ) {
-            throw new Error("invalid bookmark entry");
-        }
-        return entry as BookmarkStarQuery;
-    });
+    return (payload as { bookmarks: unknown[] }).bookmarks.filter(
+        isBookmarkStarQuery,
+    );
 }
 
 async function handleEntries(
@@ -85,21 +106,24 @@ async function handleEntries(
         return errorResponse(404, `unknown feed: ${feed}`);
     }
 
+    // Keyed on the feed alone, so an arbitrary query string cannot miss the
+    // cache and turn every request into a fresh fetch against Hatena.
+    const cacheKeyRequest = new Request(
+        new URL(`/api/entries/${feed}`, request.url),
+    );
     const cache = caches.default;
-    const cached = await cache.match(request);
+    const cached = await cache.match(cacheKeyRequest);
     if (cached) {
         return cached;
     }
 
     try {
         const response = await buildEntriesResponse(feed);
-        ctx.waitUntil(cache.put(request, response.clone()));
+        ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
         return response;
     } catch (err) {
-        return errorResponse(
-            502,
-            err instanceof Error ? err.message : String(err),
-        );
+        console.error("entries request failed", err);
+        return errorResponse(502, "upstream request failed");
     }
 }
 
@@ -110,6 +134,14 @@ async function handleStars(
 ): Promise<Response> {
     if (request.method !== "POST") {
         return errorResponse(405, "method not allowed");
+    }
+    if (!EID_PATTERN.test(eid)) {
+        return errorResponse(400, "invalid entry id");
+    }
+    if (
+        Number(request.headers.get("Content-Length")) > MAX_STAR_REQUEST_BYTES
+    ) {
+        return errorResponse(413, "request body too large");
     }
 
     let bookmarks: BookmarkStarQuery[];
@@ -124,6 +156,9 @@ async function handleStars(
 
     // The real request is a POST, so a synthetic GET request keyed on the
     // entry id (not the requested bookmarks) is used as the Cache API key.
+    // An entry's bookmark list grows continuously, so keying on its contents
+    // would miss the cache for nearly every visitor; the trade-off is that the
+    // short-lived cached counts reflect whichever bookmark set arrived first.
     const cacheKeyRequest = new Request(
         new URL(`/api/stars/${encodeURIComponent(eid)}`, request.url),
     );
@@ -145,10 +180,8 @@ async function handleStars(
         ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
         return response;
     } catch (err) {
-        return errorResponse(
-            502,
-            err instanceof Error ? err.message : String(err),
-        );
+        console.error("star request failed", err);
+        return errorResponse(502, "upstream request failed");
     }
 }
 
