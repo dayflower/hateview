@@ -18,7 +18,11 @@ export function BookmarkList({ bookmarks }: BookmarkListProps) {
     );
 
     if (sorted.length === 0) {
-        return <p className="text-gray-500">まだブックマークがありません。</p>;
+        return (
+            <p className="text-gray-500 dark:text-gray-400">
+                まだブックマークがありません。
+            </p>
+        );
     }
 
     return (

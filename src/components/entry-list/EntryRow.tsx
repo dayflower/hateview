@@ -209,7 +209,7 @@ export function EntryRow({
                     transform: `translateX(${dragX}px)`,
                     transition: dragging ? "none" : "transform 0.2s ease-out",
                 }}
-                className={`flex w-full flex-wrap items-start gap-3 py-3 hover:bg-gray-50 dark:hover:bg-gray-900 ${
+                className={`flex w-full flex-wrap items-start gap-3 py-3 transition-opacity duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 ${
                     removing ? "" : "cursor-pointer"
                 } ${read ? "opacity-60" : ""} ${
                     focused ? "ring-2 ring-blue-500 ring-inset" : ""
@@ -262,9 +262,9 @@ export function EntryRow({
                         }}
                     >
                         {read ? (
-                            <CheckCircle2 className="size-5 text-blue-600 dark:text-blue-400" />
+                            <CheckCircle2 className="size-5 animate-pop text-blue-600 dark:text-blue-400" />
                         ) : (
-                            <Circle className="size-5" />
+                            <Circle className="size-5 animate-pop" />
                         )}
                     </IconButton>
                     <IconButton
@@ -289,9 +289,9 @@ export function EntryRow({
                         }}
                     >
                         {marked ? (
-                            <BookmarkCheck className="size-5 text-blue-600 dark:text-blue-400" />
+                            <BookmarkCheck className="size-5 animate-pop text-blue-600 dark:text-blue-400" />
                         ) : (
-                            <Bookmark className="size-5" />
+                            <Bookmark className="size-5 animate-pop" />
                         )}
                     </IconButton>
                     <IconButton

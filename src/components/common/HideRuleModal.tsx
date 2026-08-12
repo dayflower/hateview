@@ -62,11 +62,11 @@ export function HideRuleModal({
             >
                 <h2
                     id="hide-rule-modal-title"
-                    className="font-semibold text-lg"
+                    className="font-semibold text-gray-900 text-lg dark:text-gray-100"
                 >
                     非表示条件を登録
                 </h2>
-                <p className="mt-1 text-gray-500 text-sm">
+                <p className="mt-1 text-gray-500 text-sm dark:text-gray-400">
                     ドメインとタイトルの glob
                     パターン(両方指定した場合は両方一致で非表示)。
                 </p>
@@ -74,17 +74,17 @@ export function HideRuleModal({
                     onSubmit={handleSubmit}
                     className="mt-3 flex flex-col gap-2"
                 >
-                    <label className="flex flex-col gap-1 text-sm">
+                    <label className="flex flex-col gap-1 text-gray-700 text-sm dark:text-gray-300">
                         ドメイン
                         <input
                             ref={domainInputRef}
                             type="text"
                             value={domain}
                             onChange={(event) => setDomain(event.target.value)}
-                            className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-950"
+                            className="rounded border border-gray-300 px-2 py-1 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
                         />
                     </label>
-                    <label className="flex flex-col gap-1 text-sm">
+                    <label className="flex flex-col gap-1 text-gray-700 text-sm dark:text-gray-300">
                         タイトル(glob パターン)
                         <input
                             type="text"
@@ -92,7 +92,7 @@ export function HideRuleModal({
                             onChange={(event) =>
                                 setTitleGlob(event.target.value)
                             }
-                            className="rounded border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-950"
+                            className="rounded border border-gray-300 px-2 py-1 text-gray-900 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
                         />
                     </label>
                     <div className="mt-2 flex justify-end gap-2">
