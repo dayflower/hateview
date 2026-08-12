@@ -1,4 +1,10 @@
-import { Bookmark, BookmarkCheck, ExternalLink, EyeOff } from "lucide-react";
+import {
+    ArrowLeft,
+    Bookmark,
+    BookmarkCheck,
+    ExternalLink,
+    EyeOff,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { HideRuleModal } from "../components/common/HideRuleModal";
@@ -85,6 +91,14 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
 
     return (
         <div className="mx-auto max-w-2xl p-4">
+            <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="mb-2 inline-flex items-center gap-1 text-blue-700 text-sm hover:underline dark:text-blue-400"
+            >
+                <ArrowLeft className="size-4" />
+                戻る
+            </button>
             <div className="flex items-start justify-between gap-2">
                 <h1 className="font-semibold text-lg">{state.data.title}</h1>
                 <button
