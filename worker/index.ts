@@ -33,6 +33,47 @@ const TIMESTAMP_PATTERN = /^\d{4}\/\d{2}\/\d{2}/;
  *  rejects obvious abuse before the body is parsed. */
 const MAX_STAR_REQUEST_BYTES = 1024 * 1024;
 
+/** Vite's dev server injects an inline React Refresh preamble, which a strict
+ *  script-src blocks outright. The production build has no inline script, so
+ *  only the dev policy is relaxed. */
+const IS_DEV = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+
+const CSP_DIRECTIVES = [
+    "default-src 'self'",
+    // b.hatena.ne.jp is the JSONP endpoint the entry detail page loads as a
+    // script; it can be dropped once that call goes through the worker.
+    IS_DEV
+        ? "script-src 'self' 'unsafe-inline' https://b.hatena.ne.jp"
+        : "script-src 'self' https://b.hatena.ne.jp",
+    "connect-src 'self'",
+    // Thumbnails, favicons and avatars are served from the bookmarked sites
+    // themselves, so their hosts can't be enumerated up front.
+    "img-src 'self' data: https:",
+    // React writes inline style attributes for measured positions and sizes.
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+];
+
+const SECURITY_HEADERS: Record<string, string> = {
+    "Content-Security-Policy": CSP_DIRECTIVES.join("; "),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
+/** Responses from `fetch`/the Cache API have immutable headers, so the headers
+ *  are applied to a copy on the way out. */
+function withSecurityHeaders(response: Response): Response {
+    const result = new Response(response.body, response);
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+        result.headers.set(name, value);
+    }
+    return result;
+}
+
 function isFeedId(value: string): value is FeedId {
     return value in FEED_URLS;
 }
@@ -185,20 +226,33 @@ async function handleStars(
     }
 }
 
+async function route(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+): Promise<Response> {
+    const url = new URL(request.url);
+
+    const entriesMatch = url.pathname.match(/^\/api\/entries\/([^/]+)$/);
+    if (entriesMatch) {
+        return handleEntries(request, ctx, entriesMatch[1]);
+    }
+
+    const starsMatch = url.pathname.match(/^\/api\/stars\/([^/]+)$/);
+    if (starsMatch) {
+        return handleStars(request, ctx, starsMatch[1]);
+    }
+
+    return env.ASSETS.fetch(request);
+}
+
 export default {
     async fetch(request, env, ctx): Promise<Response> {
-        const url = new URL(request.url);
-
-        const entriesMatch = url.pathname.match(/^\/api\/entries\/([^/]+)$/);
-        if (entriesMatch) {
-            return handleEntries(request, ctx, entriesMatch[1]);
-        }
-
-        const starsMatch = url.pathname.match(/^\/api\/stars\/([^/]+)$/);
-        if (starsMatch) {
-            return handleStars(request, ctx, starsMatch[1]);
-        }
-
-        return env.ASSETS.fetch(request);
+        const response = await route(request, env, ctx);
+        // A websocket upgrade carries no body to copy, so it is passed through
+        // untouched; nothing else this worker serves needs that exemption.
+        return response.status === 101
+            ? response
+            : withSecurityHeaders(response);
     },
 } satisfies ExportedHandler<Env>;

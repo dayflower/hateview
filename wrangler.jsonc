@@ -5,6 +5,11 @@
     "compatibility_date": "2026-08-04",
     "assets": {
         "directory": "dist/client",
-        "binding": "ASSETS"
+        "binding": "ASSETS",
+        // Assets are normally served without invoking the worker, which would
+        // skip the security headers it attaches. Only the HTML document needs
+        // them (CSP, frame-ancestors and Referrer-Policy apply to the page, not
+        // to its scripts or styles), so just that path is routed through.
+        "run_worker_first": ["/", "/index.html"]
     }
 }

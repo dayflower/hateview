@@ -119,6 +119,29 @@ describe("worker fetch handler", () => {
         expect(assetsFetch).toHaveBeenCalledWith(request);
     });
 
+    it("adds security headers to static asset responses", async () => {
+        const response = await call(new Request("https://hateview.example/"));
+
+        expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+        expect(response.headers.get("Referrer-Policy")).toBe(
+            "strict-origin-when-cross-origin",
+        );
+        const csp = response.headers.get("Content-Security-Policy") ?? "";
+        expect(csp).toContain("default-src 'self'");
+        expect(csp).toContain("frame-ancestors 'none'");
+        expect(csp).toContain("object-src 'none'");
+        expect(await response.text()).toBe("asset");
+    });
+
+    it("adds security headers to api responses too", async () => {
+        const response = await call(
+            new Request("https://hateview.example/api/entries/it"),
+        );
+
+        expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+        expect(response.headers.get("Content-Type")).toBe("application/json");
+    });
+
     it("serves the second request from cache without re-fetching Hatena", async () => {
         await call(new Request("https://hateview.example/api/entries/it"));
         await Promise.all(pending);
