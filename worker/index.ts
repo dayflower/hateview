@@ -1,3 +1,4 @@
+import { fetchBookmarkEntry } from "./lib/fetchBookmarkEntry.ts";
 import { fetchFeed } from "./lib/fetchHotEntries.ts";
 import { fetchStarCounts } from "./lib/fetchStars.ts";
 import { parseHotEntryRss } from "./lib/parseRdf.ts";
@@ -6,6 +7,8 @@ import type {
     EntriesFile,
     Entry,
     FeedId,
+    HatenaBookmark,
+    HatenaJsonliteResponse,
     StarCountsResponse,
 } from "./lib/types.ts";
 
@@ -21,17 +24,16 @@ const FEED_URLS: Record<FeedId, string> = {
 
 const CACHE_TTL_SECONDS = 10 * 60;
 const STAR_CACHE_TTL_SECONDS = 3 * 60;
+const BOOKMARKS_CACHE_TTL_SECONDS = 3 * 60;
 
 /** Hatena entry ids are numeric, but anything URL-safe is accepted so a change
  *  in their format doesn't break the app — the point is to keep separators out
- *  of the cache key and the star permalink built from it. */
+ *  of the star permalink built from it. */
 const EID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const USER_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 /** Hatena timestamps look like "2026/08/12 09:59"; only the date part is used. */
 const TIMESTAMP_PATTERN = /^\d{4}\/\d{2}\/\d{2}/;
-/** Far above a realistic request (500 bookmarks is roughly 20KB), so this only
- *  rejects obvious abuse before the body is parsed. */
-const MAX_STAR_REQUEST_BYTES = 1024 * 1024;
+const MAX_ENTRY_URL_LENGTH = 2048;
 
 /** Vite's dev server injects an inline React Refresh preamble, which a strict
  *  script-src blocks outright. The production build has no inline script, so
@@ -40,11 +42,7 @@ const IS_DEV = (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
 
 const CSP_DIRECTIVES = [
     "default-src 'self'",
-    // b.hatena.ne.jp is the JSONP endpoint the entry detail page loads as a
-    // script; it can be dropped once that call goes through the worker.
-    IS_DEV
-        ? "script-src 'self' 'unsafe-inline' https://b.hatena.ne.jp"
-        : "script-src 'self' https://b.hatena.ne.jp",
+    IS_DEV ? "script-src 'self' 'unsafe-inline'" : "script-src 'self'",
     "connect-src 'self'",
     // Thumbnails, favicons and avatars are served from the bookmarked sites
     // themselves, so their hosts can't be enumerated up front.
@@ -120,19 +118,40 @@ function isBookmarkStarQuery(value: unknown): value is BookmarkStarQuery {
     );
 }
 
-/** Star counts are a non-essential enhancement, so a malformed bookmark drops
- *  just that bookmark; only a payload that isn't a bookmark list at all fails. */
-function parseBookmarkStarQueries(payload: unknown): BookmarkStarQuery[] {
-    if (
-        typeof payload !== "object" ||
-        payload === null ||
-        !Array.isArray((payload as { bookmarks?: unknown }).bookmarks)
-    ) {
-        throw new Error("bookmarks must be an array");
+/** Silent bookmarks almost never collect stars yet make up a large share of a
+ *  hot entry's list, so they are left out of the lookup. A bookmark Hatena
+ *  reports in an unexpected shape is skipped rather than failing the request,
+ *  since star counts are a non-essential enhancement. */
+function starQueriesFor(bookmarks: HatenaBookmark[]): BookmarkStarQuery[] {
+    return bookmarks
+        .filter((bookmark) => bookmark.comment.trim() !== "")
+        .filter(isBookmarkStarQuery);
+}
+
+/** The entry url is the only client-supplied input to the bookmark and star
+ *  endpoints; the upstream url is built from a fixed endpoint plus this value. */
+function entryUrlParam(url: URL): string | null {
+    const target = url.searchParams.get("url");
+    if (!target || target.length > MAX_ENTRY_URL_LENGTH) {
+        return null;
     }
-    return (payload as { bookmarks: unknown[] }).bookmarks.filter(
-        isBookmarkStarQuery,
-    );
+    let parsed: URL;
+    try {
+        parsed = new URL(target);
+    } catch {
+        return null;
+    }
+    return parsed.protocol === "http:" || parsed.protocol === "https:"
+        ? target
+        : null;
+}
+
+/** Keyed on the entry url alone, so unrelated query parameters can neither
+ *  bypass the cache nor create a separate entry for the same lookup. */
+function apiCacheKey(request: Request, path: string, target: string): Request {
+    const key = new URL(path, request.url);
+    key.searchParams.set("url", target);
+    return new Request(key);
 }
 
 async function handleEntries(
@@ -168,41 +187,70 @@ async function handleEntries(
     }
 }
 
+/** Returns the cached-or-freshly-fetched bookmark listing for an entry. Both
+ *  the bookmark and the star endpoint go through here, so a page view costs at
+ *  most one upstream call for the listing. */
+async function loadBookmarkEntry(
+    request: Request,
+    ctx: ExecutionContext,
+    target: string,
+): Promise<Response> {
+    const cacheKeyRequest = apiCacheKey(request, "/api/bookmarks", target);
+    const cache = caches.default;
+    const cached = await cache.match(cacheKeyRequest);
+    if (cached) {
+        return cached;
+    }
+
+    const entry = await fetchBookmarkEntry(target);
+    const response = new Response(JSON.stringify(entry), {
+        headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": `public, max-age=${BOOKMARKS_CACHE_TTL_SECONDS}`,
+        },
+    });
+    ctx.waitUntil(cache.put(cacheKeyRequest, response.clone()));
+    return response;
+}
+
+async function handleBookmarks(
+    request: Request,
+    ctx: ExecutionContext,
+    url: URL,
+): Promise<Response> {
+    if (request.method !== "GET") {
+        return errorResponse(405, "method not allowed");
+    }
+    const target = entryUrlParam(url);
+    if (!target) {
+        return errorResponse(400, "invalid url");
+    }
+
+    try {
+        return await loadBookmarkEntry(request, ctx, target);
+    } catch (err) {
+        console.error("bookmarks request failed", err);
+        return errorResponse(502, "upstream request failed");
+    }
+}
+
 async function handleStars(
     request: Request,
     ctx: ExecutionContext,
-    eid: string,
+    url: URL,
 ): Promise<Response> {
-    if (request.method !== "POST") {
+    if (request.method !== "GET") {
         return errorResponse(405, "method not allowed");
     }
-    if (!EID_PATTERN.test(eid)) {
-        return errorResponse(400, "invalid entry id");
-    }
-    if (
-        Number(request.headers.get("Content-Length")) > MAX_STAR_REQUEST_BYTES
-    ) {
-        return errorResponse(413, "request body too large");
+    const target = entryUrlParam(url);
+    if (!target) {
+        return errorResponse(400, "invalid url");
     }
 
-    let bookmarks: BookmarkStarQuery[];
-    try {
-        bookmarks = parseBookmarkStarQueries(await request.json());
-    } catch (err) {
-        return errorResponse(
-            400,
-            err instanceof Error ? err.message : String(err),
-        );
-    }
-
-    // The real request is a POST, so a synthetic GET request keyed on the
-    // entry id (not the requested bookmarks) is used as the Cache API key.
-    // An entry's bookmark list grows continuously, so keying on its contents
-    // would miss the cache for nearly every visitor; the trade-off is that the
-    // short-lived cached counts reflect whichever bookmark set arrived first.
-    const cacheKeyRequest = new Request(
-        new URL(`/api/stars/${encodeURIComponent(eid)}`, request.url),
-    );
+    // The response is now a function of the entry url alone — the bookmarks to
+    // look up are derived here rather than supplied by the caller — so the
+    // cache key describes the response exactly.
+    const cacheKeyRequest = apiCacheKey(request, "/api/stars", target);
     const cache = caches.default;
     const cached = await cache.match(cacheKeyRequest);
     if (cached) {
@@ -210,7 +258,17 @@ async function handleStars(
     }
 
     try {
-        const stars = await fetchStarCounts(eid, bookmarks);
+        const entryResponse = await loadBookmarkEntry(request, ctx, target);
+        const entry =
+            (await entryResponse.json()) as HatenaJsonliteResponse | null;
+        const stars =
+            entry && EID_PATTERN.test(entry.eid)
+                ? await fetchStarCounts(
+                      entry.eid,
+                      starQueriesFor(entry.bookmarks),
+                  )
+                : {};
+
         const body: StarCountsResponse = { stars };
         const response = new Response(JSON.stringify(body), {
             headers: {
@@ -238,9 +296,12 @@ async function route(
         return handleEntries(request, ctx, entriesMatch[1]);
     }
 
-    const starsMatch = url.pathname.match(/^\/api\/stars\/([^/]+)$/);
-    if (starsMatch) {
-        return handleStars(request, ctx, starsMatch[1]);
+    if (url.pathname === "/api/bookmarks") {
+        return handleBookmarks(request, ctx, url);
+    }
+
+    if (url.pathname === "/api/stars") {
+        return handleStars(request, ctx, url);
     }
 
     return env.ASSETS.fetch(request);

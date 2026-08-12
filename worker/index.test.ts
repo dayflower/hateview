@@ -42,6 +42,81 @@ const SAMPLE_RSS = `<?xml version="1.0" encoding="UTF-8"?>
 </item>
 </rdf:RDF>`;
 
+const ENTRY_URL = "https://example.com/1";
+
+const SAMPLE_JSONLITE = {
+    title: "Item One",
+    count: 4,
+    url: ENTRY_URL,
+    entry_url: "https://b.hatena.ne.jp/entry/1",
+    eid: "4791455102846917954",
+    bookmarks: [
+        {
+            user: "alice",
+            timestamp: "2026/01/01 00:00",
+            comment: "hi",
+            tags: [],
+        },
+        { user: "bob", timestamp: "2026/01/02 00:00", comment: "yo", tags: [] },
+        // Silent: skipped, so no star lookup is made for it.
+        {
+            user: "carol",
+            timestamp: "2026/01/03 00:00",
+            comment: "  ",
+            tags: [],
+        },
+        // Malformed: dropped rather than failing the request.
+        {
+            user: "d a v e",
+            timestamp: "2026/01/04 00:00",
+            comment: "x",
+            tags: [],
+        },
+    ],
+};
+
+/** Routes each upstream host to its own canned response, so a test can assert
+ *  which of Hatena's endpoints were actually called. */
+function createFakeUpstream() {
+    return vi.fn(async (input: string | Request) => {
+        const url = typeof input === "string" ? input : input.url;
+        if (url.includes("/hotentry/")) {
+            return new Response(SAMPLE_RSS, { status: 200 });
+        }
+        if (url.includes("/entry/jsonlite/")) {
+            return new Response(JSON.stringify(SAMPLE_JSONLITE), {
+                status: 200,
+            });
+        }
+        if (url.includes("s.hatena.ne.jp")) {
+            return new Response(
+                JSON.stringify({
+                    entries: [
+                        {
+                            uri: "https://b.hatena.ne.jp/alice/20260101#bookmark-4791455102846917954",
+                            stars: [
+                                { name: "x", quote: "" },
+                                { name: "y", quote: "" },
+                            ],
+                        },
+                    ],
+                }),
+                { status: 200 },
+            );
+        }
+        throw new Error(`unexpected upstream request: ${url}`);
+    });
+}
+
+function upstreamCalls(pattern: string): string[] {
+    return vi
+        .mocked(fetch)
+        .mock.calls.map((call) =>
+            typeof call[0] === "string" ? call[0] : (call[0] as Request).url,
+        )
+        .filter((url) => url.includes(pattern));
+}
+
 function createFakeCache() {
     const store = new Map<string, Response>();
     return {
@@ -63,10 +138,7 @@ describe("worker fetch handler", () => {
 
     beforeEach(() => {
         vi.stubGlobal("caches", { default: createFakeCache() });
-        vi.stubGlobal(
-            "fetch",
-            vi.fn(async () => new Response(SAMPLE_RSS, { status: 200 })),
-        );
+        vi.stubGlobal("fetch", createFakeUpstream());
         assetsFetch = vi.fn(async () => new Response("asset"));
         env = { ASSETS: { fetch: assetsFetch } } as unknown as Env;
         pending = [];
@@ -182,87 +254,87 @@ describe("worker fetch handler", () => {
         });
     });
 
-    const starsRequest = (
-        eid: string,
-        bookmarks: unknown[],
-        headers?: HeadersInit,
-    ) =>
-        new Request(`https://hateview.example/api/stars/${eid}`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ bookmarks }),
-        });
+    const bookmarksUrl = (params: string) =>
+        `https://hateview.example/api/bookmarks?${params}`;
+    const starsUrl = (params: string) =>
+        `https://hateview.example/api/stars?${params}`;
+    const urlParam = `url=${encodeURIComponent(ENTRY_URL)}`;
 
-    // A literal "/" is already excluded by the route pattern, but a
-    // percent-encoded one survives URL normalization and reaches the handler.
-    it("rejects a malformed entry id", async () => {
-        const response = await call(
-            starsRequest("%2F..%2Fevil", [
-                { user: "alice", timestamp: "2026/01/01 00:00" },
-            ]),
-        );
-
-        expect(response.status).toBe(400);
-        expect(fetch).not.toHaveBeenCalled();
-    });
-
-    it("rejects an oversized star request before parsing it", async () => {
-        const response = await call(
-            starsRequest("1", [], {
-                "Content-Length": String(2 * 1024 * 1024),
-            }),
-        );
-
-        expect(response.status).toBe(413);
-        expect(fetch).not.toHaveBeenCalled();
-    });
-
-    it("rejects a payload that is not a bookmark list", async () => {
-        const response = await call(
-            new Request("https://hateview.example/api/stars/1", {
-                method: "POST",
-                body: JSON.stringify({ bookmarks: "nope" }),
-            }),
-        );
-
-        expect(response.status).toBe(400);
-    });
-
-    it("drops malformed bookmarks instead of failing the request", async () => {
-        vi.stubGlobal(
-            "fetch",
-            vi.fn(
-                async () =>
-                    new Response(
-                        JSON.stringify({
-                            entries: [
-                                {
-                                    uri: "https://b.hatena.ne.jp/alice/20260101#bookmark-1",
-                                    stars: [{ name: "x", quote: "" }],
-                                },
-                            ],
-                        }),
-                    ),
-            ),
-        );
-
-        const response = await call(
-            starsRequest("1", [
-                { user: "alice", timestamp: "2026/01/01 00:00" },
-                { user: "b o b", timestamp: "2026/01/01 00:00" },
-                { user: "carol", timestamp: "not a timestamp" },
-                { user: "dave" },
-                null,
-            ]),
-        );
+    it("returns the bookmark listing for an entry url", async () => {
+        const response = await call(new Request(bookmarksUrl(urlParam)));
 
         expect(response.status).toBe(200);
-        expect(await response.json()).toEqual({ stars: { alice: 1 } });
+        expect(await response.json()).toEqual(SAMPLE_JSONLITE);
+        expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
+    });
 
-        const body = (vi.mocked(fetch).mock.calls[0][1] as RequestInit)
-            .body as string;
-        expect(new URLSearchParams(body).getAll("uri")).toEqual([
-            "https://b.hatena.ne.jp/alice/20260101#bookmark-1",
+    it("serves a repeated bookmark listing from cache", async () => {
+        await call(new Request(bookmarksUrl(urlParam)));
+        await Promise.all(pending);
+        await call(new Request(bookmarksUrl(`${urlParam}&extra=1`)));
+
+        expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
+    });
+
+    it.each([
+        ["missing", ""],
+        ["javascript", `url=${encodeURIComponent("javascript:alert(1)")}`],
+        ["data", `url=${encodeURIComponent("data:text/html,x")}`],
+        ["relative", "url=%2Fnot-absolute"],
+        ["over-long", `url=https%3A%2F%2Fexample.com%2F${"a".repeat(2100)}`],
+    ])("rejects a %s url on both endpoints", async (_label, params) => {
+        for (const target of [bookmarksUrl(params), starsUrl(params)]) {
+            const response = await call(new Request(target));
+            expect(response.status).toBe(400);
+        }
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("derives star lookups from the entry's own bookmarks", async () => {
+        const response = await call(new Request(starsUrl(urlParam)));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ stars: { alice: 2 } });
+
+        const body = vi
+            .mocked(fetch)
+            .mock.calls.map((c) => c[1] as RequestInit)
+            .find((init) => typeof init?.body === "string")?.body as string;
+        const uris = new URLSearchParams(body).getAll("uri");
+        // carol is silent and "d a v e" is malformed, so neither is looked up.
+        expect(uris).toEqual([
+            "https://b.hatena.ne.jp/alice/20260101#bookmark-4791455102846917954",
+            "https://b.hatena.ne.jp/bob/20260102#bookmark-4791455102846917954",
         ]);
+    });
+
+    it("reuses the cached bookmark listing when counting stars", async () => {
+        await call(new Request(bookmarksUrl(urlParam)));
+        await Promise.all(pending);
+
+        await call(new Request(starsUrl(urlParam)));
+
+        expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
+    });
+
+    it("returns no stars for a url nobody has bookmarked", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => new Response("null", { status: 200 })),
+        );
+
+        const response = await call(new Request(starsUrl(urlParam)));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({ stars: {} });
+    });
+
+    it("rejects a non-GET request to the api endpoints", async () => {
+        for (const target of [bookmarksUrl(urlParam), starsUrl(urlParam)]) {
+            const response = await call(
+                new Request(target, { method: "POST" }),
+            );
+            expect(response.status).toBe(405);
+        }
     });
 });

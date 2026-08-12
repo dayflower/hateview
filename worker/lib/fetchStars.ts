@@ -4,6 +4,7 @@ import type {
     HatenaStarEntriesResponse,
     HatenaStarEntry,
 } from "../../src/types/star.ts";
+import { USER_AGENT } from "./userAgent.ts";
 
 const STAR_API_URL = "https://s.hatena.ne.jp/entries.json";
 
@@ -59,7 +60,10 @@ async function fetchStarEntries(uris: string[]): Promise<HatenaStarEntry[]> {
 
     const res = await fetch(STAR_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+        },
         body: body.toString(),
     });
     if (!res.ok) {

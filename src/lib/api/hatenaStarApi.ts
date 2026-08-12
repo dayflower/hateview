@@ -1,14 +1,13 @@
-import type { BookmarkStarQuery, StarCountsResponse } from "../../types/star";
+import type { StarCountsResponse } from "../../types/star";
 
+/** The worker derives which bookmarks to look up from the entry url itself, so
+ *  the caller only identifies the entry. */
 export async function fetchStarCounts(
-    eid: string,
-    bookmarks: BookmarkStarQuery[],
+    url: string,
 ): Promise<Record<string, number>> {
-    const res = await fetch(`/api/stars/${encodeURIComponent(eid)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookmarks }),
-    });
+    const res = await fetch(
+        `${import.meta.env.BASE_URL}api/stars?url=${encodeURIComponent(url)}`,
+    );
     if (!res.ok) {
         throw new Error(`Failed to fetch star counts: ${res.status}`);
     }

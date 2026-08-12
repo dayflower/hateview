@@ -1,4 +1,4 @@
-const USER_AGENT = "hateview-bot/1.0 (+https://github.com/dayflower/hateview)";
+import { USER_AGENT } from "./userAgent.ts";
 
 export async function fetchFeed(url: string): Promise<string> {
     const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });

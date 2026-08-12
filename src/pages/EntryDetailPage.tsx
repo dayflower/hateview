@@ -12,14 +12,14 @@ import { PillTabBar } from "../components/common/PillTabBar";
 import { Thumbnail } from "../components/common/Thumbnail";
 import type { BookmarkSortOrder } from "../components/entry-detail/BookmarkList";
 import { BookmarkList } from "../components/entry-detail/BookmarkList";
+import {
+    bookmarkEntryPageUrl,
+    fetchEntryBookmarks,
+} from "../lib/api/hatenaBookmarkApi";
 import { fetchStarCounts } from "../lib/api/hatenaStarApi";
 import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
-import {
-    bookmarkEntryPageUrl,
-    fetchEntryJsonlite,
-} from "../lib/jsonp/hatenaBookmarkApi";
 import {
     readHideNoComment,
     writeHideNoComment,
@@ -59,7 +59,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         let cancelled = false;
         setState({ data: null, loading: true, error: null });
 
-        fetchEntryJsonlite(url)
+        fetchEntryBookmarks(url)
             .then((data) => {
                 if (!cancelled) {
                     setState({ data, loading: false, error: null });
@@ -89,19 +89,8 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
             return;
         }
         let cancelled = false;
-        const { eid, bookmarks } = state.data;
 
-        // Silent bookmarks rarely attract stars, and they make up a large share
-        // of a hot entry's list, so skipping them keeps the lookup small.
-        fetchStarCounts(
-            eid,
-            bookmarks
-                .filter((bookmark) => bookmark.comment.trim() !== "")
-                .map((bookmark) => ({
-                    user: bookmark.user,
-                    timestamp: bookmark.timestamp,
-                })),
-        )
+        fetchStarCounts(url)
             .then((counts) => {
                 if (!cancelled) {
                     setStars(counts);
@@ -115,7 +104,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         return () => {
             cancelled = true;
         };
-    }, [state.data, sortOrder, stars]);
+    }, [url, state.data, sortOrder, stars]);
 
     if (state.loading) {
         return (

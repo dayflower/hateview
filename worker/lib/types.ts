@@ -1,3 +1,7 @@
+import type {
+    HatenaBookmark,
+    HatenaJsonliteResponse,
+} from "../../src/types/bookmark.ts";
 import type { EntriesFile, Entry, FeedId } from "../../src/types/entry.ts";
 import type {
     BookmarkStarQuery,
@@ -9,6 +13,8 @@ export type {
     EntriesFile,
     Entry,
     FeedId,
+    HatenaBookmark,
+    HatenaJsonliteResponse,
     StarCountsResponse,
 };
 

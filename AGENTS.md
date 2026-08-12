@@ -6,8 +6,8 @@ hateview is a single-page web client for browsing Hatena Bookmark
 ("はてなブックマーク") hot entries. There is no periodic build/update job: a
 Cloudflare Worker (`worker/index.ts`) fetches Hatena's RSS feeds on demand,
 per request, and caches the response with the Workers Cache API. The React
-app fetches this on-demand API at runtime. Per-entry bookmark comments are
-fetched live from Hatena's JSONP API directly from the browser. The app is
+app fetches this on-demand API at runtime. Per-entry bookmark comments and
+star counts are proxied through the same worker. The app is
 deployed to Cloudflare Workers (with Static Assets serving the SPA build).
 
 Client-only state (read/unread tracking, hide rules, read-later list, removed
@@ -74,9 +74,22 @@ Node/Bun-only APIs out of `src/` or `worker/`.
    against `localStorage` (`src/lib/storage/seenEntries.ts`). Switching tabs
    fetches a different feed; each feed's result is cached client-side for the
    session.
-4. Per-entry bookmark comments are fetched on demand from Hatena's JSONP
-   endpoint (`src/lib/jsonp/hatenaBookmarkApi.ts` + `src/lib/jsonp/jsonp.ts`)
-   directly from the browser — there is no proxy.
+4. Per-entry bookmark comments come from `/api/bookmarks?url=...`
+   (`src/lib/api/hatenaBookmarkApi.ts`), which the worker serves by calling
+   Hatena's `entry/jsonlite` endpoint (`worker/lib/fetchBookmarkEntry.ts`) and
+   caching the result. Hatena answers with `null` for a url nobody has
+   bookmarked, and that is passed through unchanged.
+5. Star counts come from `/api/stars?url=...`
+   (`src/lib/api/hatenaStarApi.ts`). The worker reuses the cached bookmark
+   listing from step 4 to decide which bookmarks to look up — commented ones
+   only, oldest first, capped — and queries Hatena's star API in chunks
+   (`worker/lib/fetchStars.ts`). The entry url is the only input, so the
+   response is a pure function of it and can be cached under that key.
+
+All browser-to-Hatena traffic goes through the worker; the app makes no
+cross-origin requests, which is what lets it ship a `script-src 'self'` CSP
+(attached in `worker/index.ts`, with `run_worker_first` in `wrangler.jsonc`
+routing the HTML document through the worker so the header is applied).
 
 ### Routing
 
