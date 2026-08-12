@@ -149,28 +149,9 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 <ArrowLeft className="size-4" />
                 戻る
             </button>
-            <div className="flex items-start justify-between gap-2">
-                <h1 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
-                    {state.data.title}
-                </h1>
-                <button
-                    type="button"
-                    aria-label={
-                        marked ? "あとで読むから外す" : "あとで読むに追加"
-                    }
-                    onClick={() =>
-                        toggle({ url, title: state.data?.title ?? url })
-                    }
-                    className="flex shrink-0 items-center gap-1 rounded border border-gray-300 px-2 py-1 text-gray-700 text-sm transition-[background-color,border-color,color,transform] duration-150 ease-out hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 active:scale-95 dark:border-gray-700 dark:text-gray-300 dark:hover:border-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-300"
-                >
-                    {marked ? (
-                        <BookmarkCheck className="size-4 animate-pop text-blue-600 dark:text-blue-400" />
-                    ) : (
-                        <Bookmark className="size-4 animate-pop" />
-                    )}
-                    あとで読む
-                </button>
-            </div>
+            <h1 className="font-semibold text-gray-900 text-lg dark:text-gray-100">
+                {state.data.title}
+            </h1>
             <p className="mt-1 font-bold text-rose-500 text-sm dark:text-rose-400">
                 {state.data.count} users
             </p>
@@ -219,6 +200,23 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 >
                     <EyeOff className="size-4" />
                     非表示条件を登録
+                </button>
+                <button
+                    type="button"
+                    aria-label={
+                        marked ? "あとで読むから外す" : "あとで読むに追加"
+                    }
+                    onClick={() =>
+                        toggle({ url, title: state.data?.title ?? url })
+                    }
+                    className="inline-flex items-center gap-1 text-blue-700 hover:underline dark:text-blue-400"
+                >
+                    {marked ? (
+                        <BookmarkCheck className="size-4 animate-pop text-blue-600 dark:text-blue-400" />
+                    ) : (
+                        <Bookmark className="size-4 animate-pop" />
+                    )}
+                    あとで読む
                 </button>
             </div>
             <label className="mt-3 flex w-fit items-center gap-1.5 text-gray-700 text-sm dark:text-gray-300">
