@@ -17,6 +17,7 @@ import {
     fetchEntryBookmarks,
 } from "../lib/api/hatenaBookmarkApi";
 import { fetchStarCounts } from "../lib/api/hatenaStarApi";
+import { toReadLaterSnapshot } from "../lib/entry/readLaterSnapshot";
 import { useAsyncData } from "../lib/hooks/useAsyncData";
 import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
@@ -93,6 +94,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
 
     const marked = isMarked(url);
     const domain = new URL(url).hostname;
+    const title = state.data.title;
     // Hatena's per-entry bookmark API doesn't return category/description/
     // image, so fall back to the list API's data for this URL, if it was
     // already fetched this session (e.g. via the entry list).
@@ -178,7 +180,15 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                         marked ? "あとで読むから外す" : "あとで読むに追加"
                     }
                     onClick={() =>
-                        toggle({ url, title: state.data?.title ?? url })
+                        // The per-entry bookmark API has no thumbnail/description/
+                        // category, so prefer the list API's snapshot (if this
+                        // session already fetched it) to keep read-later entries
+                        // added here as complete as ones added from the list.
+                        toggle(
+                            cachedEntry
+                                ? toReadLaterSnapshot(cachedEntry)
+                                : { url, title },
+                        )
                     }
                     className="inline-flex items-center gap-1 text-blue-700 hover:underline dark:text-blue-400"
                 >
