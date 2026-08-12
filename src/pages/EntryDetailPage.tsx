@@ -17,6 +17,10 @@ import {
     bookmarkEntryPageUrl,
     fetchEntryJsonlite,
 } from "../lib/jsonp/hatenaBookmarkApi";
+import {
+    readHideNoComment,
+    writeHideNoComment,
+} from "../lib/storage/hideNoComment";
 import type { HatenaJsonliteResponse } from "../types/bookmark";
 
 interface EntryDetailPageProps {
@@ -37,7 +41,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         loading: true,
         error: null,
     });
-    const [hideNoComment, setHideNoComment] = useState(false);
+    const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
     const [hideModalOpen, setHideModalOpen] = useState(false);
 
     useEffect(() => {
@@ -173,7 +177,10 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 <input
                     type="checkbox"
                     checked={hideNoComment}
-                    onChange={(event) => setHideNoComment(event.target.checked)}
+                    onChange={(event) => {
+                        setHideNoComment(event.target.checked);
+                        writeHideNoComment(event.target.checked);
+                    }}
                     className="size-4"
                 />
                 コメントのない人を隠す
