@@ -10,6 +10,22 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="hateview" />
     <title>hateview</title>
+    <script>
+      (() => {
+        try {
+          const raw = localStorage.getItem("hateview:v1:theme");
+          const setting = raw ? JSON.parse(raw) : "system";
+          const isDark =
+            setting === "dark" ||
+            (setting !== "light" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark
+            ? "dark"
+            : "light";
+        } catch {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
