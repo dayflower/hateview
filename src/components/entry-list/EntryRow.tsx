@@ -124,8 +124,9 @@ export function EntryRow({
 
     // Only the "new" badge should ever cause a URL to be marked seen, and
     // only once it's actually been shown on screen for a moment — not merely
-    // fetched. Rows outside the viewport (e.g. further down an unscrolled
-    // list) stay "new" until the user actually scrolls to them.
+    // fetched. This just persists the record for next time this feed is
+    // fetched (see useEntries' markSeen): the badge on this already-rendered
+    // row never disappears mid-session just because it scrolled into view.
     useEffect(() => {
         if (!isNew || !onSeen || typeof IntersectionObserver === "undefined") {
             return;
