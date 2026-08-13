@@ -1,13 +1,31 @@
 import { Trash2 } from "lucide-react";
 import { HideRuleForm } from "../components/common/HideRuleForm";
+import { PillTabBar } from "../components/common/PillTabBar";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
+import { useTheme } from "../lib/hooks/useTheme.tsx";
+import type { ThemeSetting } from "../lib/storage/theme";
+
+const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
+    { id: "light", label: "ライト" },
+    { id: "dark", label: "ダーク" },
+    { id: "system", label: "システムに従う" },
+];
 
 export function SettingsPage() {
     const { rules, removeRule } = useHideRules();
+    const { theme, setTheme } = useTheme();
 
     return (
         <div className="mx-auto max-w-2xl p-4">
-            <h1 className="font-semibold text-lg">非表示フィルタ設定</h1>
+            <h1 className="font-semibold text-lg">表示設定</h1>
+            <PillTabBar
+                options={THEME_OPTIONS}
+                selected={theme}
+                onSelect={setTheme}
+                ariaLabel="テーマ"
+            />
+
+            <h1 className="mt-8 font-semibold text-lg">非表示フィルタ設定</h1>
             <HideRuleForm
                 descriptionClassName="mt-1 text-gray-500 text-sm"
                 formClassName="mt-4 flex flex-col gap-2"
