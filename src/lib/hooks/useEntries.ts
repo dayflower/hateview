@@ -15,9 +15,12 @@ interface FetchState {
 }
 
 interface EntriesState extends FetchState {
-    /** Marks a single entry URL seen, dropping it from `newUrls`. Intended to
-     *  be called once an entry row has actually been shown to the user
-     *  (e.g. scrolled into view), not merely fetched. */
+    /** Records a single entry URL as seen (e.g. once it's actually been
+     *  shown to the user for a moment, not merely fetched). This only
+     *  affects `newUrls` the *next* time this feed is fetched (typically a
+     *  full page reload) — the currently displayed `newUrls`, and thus the
+     *  "new" badge, never changes as a result of calling this within the
+     *  same session. */
     markSeen: (url: string) => void;
 }
 
@@ -92,24 +95,9 @@ export function useEntries(feed: FeedId): EntriesState {
         };
     }, [feed]);
 
-    const markSeen = useCallback(
-        (url: string) => {
-            markUrlSeen(url);
-            setState((prev) => {
-                if (!prev.newUrls.has(url)) {
-                    return prev;
-                }
-                const newUrls = new Set(prev.newUrls);
-                newUrls.delete(url);
-                const cached = cache.get(feed);
-                if (cached) {
-                    cache.set(feed, { entries: cached.entries, newUrls });
-                }
-                return { ...prev, newUrls };
-            });
-        },
-        [feed],
-    );
+    const markSeen = useCallback((url: string) => {
+        markUrlSeen(url);
+    }, []);
 
     return { ...state, markSeen };
 }
