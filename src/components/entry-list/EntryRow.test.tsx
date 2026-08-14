@@ -65,8 +65,7 @@ describe("tap navigation", () => {
         renderEntryRow();
 
         const target = screen.getByText(SAMPLE_ENTRY.description);
-        await user.click(target);
-        await user.click(target);
+        await user.dblClick(target);
 
         expect(openSpy).toHaveBeenCalledWith(
             SAMPLE_ENTRY.url,

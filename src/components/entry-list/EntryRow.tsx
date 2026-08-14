@@ -31,7 +31,7 @@ import { RelativeTime } from "../common/RelativeTime";
 const CONFIRM_TIMEOUT_MS = 3000;
 const SEEN_VISIBILITY_THRESHOLD = 0.5;
 const SEEN_DWELL_MS = 600;
-const DOUBLE_TAP_WINDOW_MS = 300;
+const DOUBLE_CLICK_GUARD_MS = 300;
 
 interface EntryRowProps {
     entry: Entry;
@@ -85,7 +85,6 @@ export function EntryRow({
     const pendingNavigateRef = useRef<ReturnType<typeof setTimeout> | null>(
         null,
     );
-    const lastClickTimeRef = useRef(0);
 
     useEffect(() => {
         return () => {
@@ -95,32 +94,35 @@ export function EntryRow({
         };
     }, []);
 
-    // A single tap navigates to the entry detail page, but only after a
-    // short delay: if a second tap follows within the window, it's treated
-    // as a double-tap that jumps straight to the original article instead,
-    // and the pending detail-page navigation is cancelled.
+    // A click schedules the detail-page navigation after a short delay
+    // instead of firing it immediately, so that a dblclick landing shortly
+    // after (browsers always fire click, click, dblclick in that order) can
+    // still cancel it in favor of opening the original article.
     const handleCardClick = () => {
         if (wasDragged()) {
             return;
         }
-        const now = Date.now();
-        if (now - lastClickTimeRef.current < DOUBLE_TAP_WINDOW_MS) {
-            lastClickTimeRef.current = 0;
-            if (pendingNavigateRef.current) {
-                clearTimeout(pendingNavigateRef.current);
-                pendingNavigateRef.current = null;
-            }
-            const href = safeExternalUrl(entry.url);
-            if (href) {
-                window.open(href, "_blank", "noopener,noreferrer");
-            }
-            return;
+        if (pendingNavigateRef.current) {
+            clearTimeout(pendingNavigateRef.current);
         }
-        lastClickTimeRef.current = now;
         pendingNavigateRef.current = setTimeout(() => {
             pendingNavigateRef.current = null;
             navigate(entryPath(entry.url));
-        }, DOUBLE_TAP_WINDOW_MS);
+        }, DOUBLE_CLICK_GUARD_MS);
+    };
+
+    const handleCardDoubleClick = () => {
+        if (wasDragged()) {
+            return;
+        }
+        if (pendingNavigateRef.current) {
+            clearTimeout(pendingNavigateRef.current);
+            pendingNavigateRef.current = null;
+        }
+        const href = safeExternalUrl(entry.url);
+        if (href) {
+            window.open(href, "_blank", "noopener,noreferrer");
+        }
     };
 
     const stop = (event: MouseEvent) => event.stopPropagation();
@@ -208,6 +210,7 @@ export function EntryRow({
             <div
                 {...dragHandlers}
                 onClick={handleCardClick}
+                onDoubleClick={handleCardDoubleClick}
                 style={{
                     transform: `translateX(${dragX}px)`,
                     transition: dragging ? "none" : "transform 0.2s ease-out",
