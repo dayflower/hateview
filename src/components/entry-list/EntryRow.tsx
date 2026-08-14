@@ -31,6 +31,7 @@ import { RelativeTime } from "../common/RelativeTime";
 const CONFIRM_TIMEOUT_MS = 3000;
 const SEEN_VISIBILITY_THRESHOLD = 0.5;
 const SEEN_DWELL_MS = 600;
+const DOUBLE_TAP_WINDOW_MS = 300;
 
 interface EntryRowProps {
     entry: Entry;
@@ -81,11 +82,45 @@ export function EntryRow({
         close: closeMenu,
     } = useDropdownMenu();
 
+    const pendingNavigateRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
+    const lastClickTimeRef = useRef(0);
+
+    useEffect(() => {
+        return () => {
+            if (pendingNavigateRef.current) {
+                clearTimeout(pendingNavigateRef.current);
+            }
+        };
+    }, []);
+
+    // A single tap navigates to the entry detail page, but only after a
+    // short delay: if a second tap follows within the window, it's treated
+    // as a double-tap that jumps straight to the original article instead,
+    // and the pending detail-page navigation is cancelled.
     const handleCardClick = () => {
         if (wasDragged()) {
             return;
         }
-        navigate(entryPath(entry.url));
+        const now = Date.now();
+        if (now - lastClickTimeRef.current < DOUBLE_TAP_WINDOW_MS) {
+            lastClickTimeRef.current = 0;
+            if (pendingNavigateRef.current) {
+                clearTimeout(pendingNavigateRef.current);
+                pendingNavigateRef.current = null;
+            }
+            const href = safeExternalUrl(entry.url);
+            if (href) {
+                window.open(href, "_blank", "noopener,noreferrer");
+            }
+            return;
+        }
+        lastClickTimeRef.current = now;
+        pendingNavigateRef.current = setTimeout(() => {
+            pendingNavigateRef.current = null;
+            navigate(entryPath(entry.url));
+        }, DOUBLE_TAP_WINDOW_MS);
     };
 
     const stop = (event: MouseEvent) => event.stopPropagation();
@@ -177,7 +212,7 @@ export function EntryRow({
                     transform: `translateX(${dragX}px)`,
                     transition: dragging ? "none" : "transform 0.2s ease-out",
                 }}
-                className={`flex w-full flex-wrap items-start gap-3 py-3 transition-opacity duration-300 hover:bg-gray-50 dark:hover:bg-gray-900 ${
+                className={`flex w-full flex-wrap items-start gap-3 py-3 transition-opacity duration-300 hover:bg-gray-50 touch-manipulation dark:hover:bg-gray-900 ${
                     removing ? "" : "cursor-pointer"
                 } ${read ? "opacity-60" : ""} ${
                     focused ? "ring-2 ring-blue-500 ring-inset" : ""
