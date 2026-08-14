@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 
+// The browser's own scroll restoration fights with our in-app scroll
+// restoration (EntryListPage) on hash-based back/forward navigation, since
+// both try to set the scroll position after a popstate. Disable it so only
+// our logic decides scroll position.
+if ("scrollRestoration" in window.history) {
+    window.history.scrollRestoration = "manual";
+}
+
 function currentPath(): string {
     const hash = window.location.hash;
     if (!hash || hash === "#") {

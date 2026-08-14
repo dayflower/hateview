@@ -11,9 +11,17 @@ import { entryPath } from "../router/routes";
 import { navigate } from "../router/useHashRoute";
 import type { Entry } from "../types/entry";
 
+/** Remembers the selected category and scroll position across mount/unmount
+ *  cycles of EntryListPage (e.g. navigating to an entry and back), so that
+ *  returning to the list restores where the user left off. Intentionally an
+ *  in-memory module variable, not localStorage: this is session-scoped view
+ *  state, not durable data, and should reset on a full page reload. */
+let savedListState: { category: CategoryFilter; scrollY: number } | null = null;
+
 export function EntryListPage() {
-    const [selectedCategory, setSelectedCategory] =
-        useState<CategoryFilter>("all");
+    const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>(
+        () => savedListState?.category ?? "all",
+    );
     const { entries, newUrls, loading, error, markSeen } =
         useEntries(selectedCategory);
     const { isHidden } = useHideRules();
@@ -21,11 +29,42 @@ export function EntryListPage() {
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
     const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
+    const categoryRef = useRef(selectedCategory);
+    categoryRef.current = selectedCategory;
+    // Tracks scroll position continuously (rather than reading window.scrollY
+    // only at unmount) because by the time this page actually unmounts, its
+    // content is already gone and the browser has clamped the scroll
+    // position to whatever page replaces it.
+    const scrollYRef = useRef(0);
+    const restoredScrollRef = useRef(false);
 
     const selectCategory = (category: CategoryFilter) => {
         setSelectedCategory(category);
         setFocusedIndex(-1);
     };
+
+    useEffect(() => {
+        if (!loading && !restoredScrollRef.current) {
+            restoredScrollRef.current = true;
+            if (savedListState !== null) {
+                window.scrollTo(0, savedListState.scrollY);
+            }
+        }
+    }, [loading]);
+
+    useEffect(() => {
+        const onScroll = () => {
+            scrollYRef.current = window.scrollY;
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            savedListState = {
+                category: categoryRef.current,
+                scrollY: scrollYRef.current,
+            };
+        };
+    }, []);
 
     // isHidden/isRemoved change identity whenever the underlying hide-rule or
     // removed-entry state changes, so this memo correctly recomputes exactly
