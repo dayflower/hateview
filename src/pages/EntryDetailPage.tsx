@@ -42,7 +42,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const { isMarked, toggle } = useReadLater();
     const state = useAsyncData(() => fetchEntryBookmarks(url), [url]);
     const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
-    const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("new");
+    const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("star");
     const [hideModalOpen, setHideModalOpen] = useState(false);
     const [stars, setStars] = useState<Record<string, number> | null>(null);
 
