@@ -182,10 +182,28 @@ describe("worker fetch handler", () => {
 
     it("returns 404 for an unknown feed", async () => {
         const response = await call(
-            new Request("https://hateview.example/api/entries/game"),
+            new Request("https://hateview.example/api/entries/bogus"),
         );
 
         expect(response.status).toBe(404);
+    });
+
+    it("returns parsed entries for each newly supported category feed", async () => {
+        const newFeeds = [
+            "social",
+            "economics",
+            "life",
+            "knowledge",
+            "entertainment",
+            "game",
+            "fun",
+        ];
+        for (const feed of newFeeds) {
+            const response = await call(
+                new Request(`https://hateview.example/api/entries/${feed}`),
+            );
+            expect(response.status).toBe(200);
+        }
     });
 
     it("falls back to static assets for non-api paths", async () => {

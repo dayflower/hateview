@@ -106,7 +106,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         : state.data.bookmarks;
 
     return (
-        <div className="mx-auto max-w-2xl p-4">
+        <div className="mx-auto max-w-4xl p-4">
             <button
                 type="button"
                 onClick={() => window.history.back()}

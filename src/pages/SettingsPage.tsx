@@ -1,6 +1,8 @@
 import { Trash2 } from "lucide-react";
 import { HideRuleForm } from "../components/common/HideRuleForm";
 import { PillTabBar } from "../components/common/PillTabBar";
+import { ALL_CATEGORIES } from "../lib/categories";
+import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useTheme } from "../lib/hooks/useTheme.tsx";
 import type { ThemeSetting } from "../lib/storage/theme";
@@ -14,9 +16,11 @@ const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
 export function SettingsPage() {
     const { rules, removeRule } = useHideRules();
     const { theme, setTheme } = useTheme();
+    const { visibleCategories, isCategoryVisible, setCategoryVisible } =
+        useCategoryVisibility();
 
     return (
-        <div className="mx-auto max-w-2xl p-4">
+        <div className="mx-auto max-w-4xl p-4">
             <h1 className="font-semibold text-lg">表示設定</h1>
             <PillTabBar
                 options={THEME_OPTIONS}
@@ -24,6 +28,39 @@ export function SettingsPage() {
                 onSelect={setTheme}
                 ariaLabel="テーマ"
             />
+
+            <h1 className="mt-8 font-semibold text-lg">表示カテゴリ設定</h1>
+            <p className="mt-1 text-gray-500 text-sm">
+                エントリー一覧に表示するカテゴリを選択します。少なくとも1つは選択してください。
+            </p>
+            <ul className="mt-4">
+                {ALL_CATEGORIES.map((category) => {
+                    const checked = isCategoryVisible(category.id);
+                    const disabled = checked && visibleCategories.length <= 1;
+                    return (
+                        <li
+                            key={category.id}
+                            className="flex items-center border-gray-200 border-b py-2 text-sm dark:border-gray-800"
+                        >
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={disabled}
+                                    onChange={(event) =>
+                                        setCategoryVisible(
+                                            category.id,
+                                            event.target.checked,
+                                        )
+                                    }
+                                    className="size-4 rounded border-gray-300 dark:border-gray-700"
+                                />
+                                {category.label}
+                            </label>
+                        </li>
+                    );
+                })}
+            </ul>
 
             <h1 className="mt-8 font-semibold text-lg">非表示フィルタ設定</h1>
             <HideRuleForm

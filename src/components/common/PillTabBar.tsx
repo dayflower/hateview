@@ -32,7 +32,7 @@ export function PillTabBar<T extends string>({
         <div
             role="tablist"
             aria-label={ariaLabel}
-            className="relative inline-flex gap-1 rounded-full border border-gray-300 p-1 dark:border-gray-700"
+            className="relative inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-gray-300 p-1 dark:border-gray-700"
         >
             {pillRect && (
                 <div
@@ -55,7 +55,7 @@ export function PillTabBar<T extends string>({
                     role="tab"
                     aria-selected={selected === option.id}
                     onClick={() => onSelect(option.id)}
-                    className={`relative z-10 rounded-full px-3 py-1 text-sm transition-colors ${
+                    className={`relative z-10 shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-sm transition-colors ${
                         selected === option.id
                             ? "text-white"
                             : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
