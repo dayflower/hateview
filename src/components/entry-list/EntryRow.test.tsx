@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReadLaterProvider } from "../../lib/hooks/useReadLater.tsx";
 import { ReadTrackingProvider } from "../../lib/hooks/useReadTracking.tsx";
 import { RemovedEntriesProvider } from "../../lib/hooks/useRemovedEntries.tsx";
+import { entryPath } from "../../router/routes";
 import type { Entry } from "../../types/entry";
 import { EntryRow } from "./EntryRow";
 
@@ -37,10 +38,49 @@ function renderEntryRow() {
 
 beforeEach(() => {
     localStorage.clear();
+    window.location.hash = "";
 });
 
 afterEach(() => {
     cleanup();
+});
+
+describe("tap navigation", () => {
+    it("navigates to the entry detail page after a single tap", async () => {
+        const user = userEvent.setup();
+        renderEntryRow();
+
+        await user.click(screen.getByText(SAMPLE_ENTRY.description));
+
+        await waitFor(() => {
+            expect(window.location.hash).toBe(
+                `#${entryPath(SAMPLE_ENTRY.url)}`,
+            );
+        });
+    });
+
+    it("opens the original article instead of navigating on a double tap", async () => {
+        const user = userEvent.setup();
+        const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+        renderEntryRow();
+
+        const target = screen.getByText(SAMPLE_ENTRY.description);
+        await user.click(target);
+        await user.click(target);
+
+        expect(openSpy).toHaveBeenCalledWith(
+            SAMPLE_ENTRY.url,
+            "_blank",
+            "noopener,noreferrer",
+        );
+
+        // Give the (cancelled) single-tap navigation time to fire were it
+        // still pending, to confirm the double tap really suppressed it.
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        expect(window.location.hash).toBe("");
+
+        openSpy.mockRestore();
+    });
 });
 
 describe("read toggle", () => {
