@@ -3,6 +3,7 @@ import { HideRuleModal } from "../components/common/HideRuleModal";
 import type { CategoryFilter } from "../components/entry-list/CategoryFilterBar";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
+import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useEntries } from "../lib/hooks/useEntries";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
@@ -19,8 +20,14 @@ import type { Entry } from "../types/entry";
 let savedListState: { category: CategoryFilter; scrollY: number } | null = null;
 
 export function EntryListPage() {
+    const { visibleCategories, isCategoryVisible } = useCategoryVisibility();
     const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>(
-        () => savedListState?.category ?? "all",
+        () => {
+            const preferred = savedListState?.category ?? "all";
+            return isCategoryVisible(preferred)
+                ? preferred
+                : (visibleCategories[0] ?? "all");
+        },
     );
     const { entries, newUrls, loading, error, markSeen } =
         useEntries(selectedCategory);
@@ -109,7 +116,7 @@ export function EntryListPage() {
     }
 
     return (
-        <div className="mx-auto max-w-2xl p-4">
+        <div className="mx-auto max-w-4xl p-4">
             <CategoryFilterBar
                 selected={selectedCategory}
                 onSelect={selectCategory}

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { CategoryVisibilityProvider } from "./lib/hooks/useCategoryVisibility.tsx";
 import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadLaterProvider } from "./lib/hooks/useReadLater.tsx";
 import { ReadTrackingProvider } from "./lib/hooks/useReadTracking.tsx";
@@ -16,7 +17,9 @@ createRoot(document.getElementById("root")!).render(
                 <HideRulesProvider>
                     <ReadLaterProvider>
                         <RemovedEntriesProvider>
-                            <App />
+                            <CategoryVisibilityProvider>
+                                <App />
+                            </CategoryVisibilityProvider>
                         </RemovedEntriesProvider>
                     </ReadLaterProvider>
                 </HideRulesProvider>

@@ -1,4 +1,14 @@
-export type FeedId = "all" | "general" | "it";
+export type FeedId =
+    | "all"
+    | "general"
+    | "social"
+    | "economics"
+    | "life"
+    | "knowledge"
+    | "it"
+    | "entertainment"
+    | "game"
+    | "fun";
 
 export interface Entry {
     url: string;

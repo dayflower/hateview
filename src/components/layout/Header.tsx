@@ -20,7 +20,7 @@ const LINKS: {
 export function Header({ route }: HeaderProps) {
     return (
         <header className="border-gray-200 border-b dark:border-gray-800">
-            <nav className="mx-auto flex max-w-2xl items-center gap-1 px-2">
+            <nav className="mx-auto flex max-w-4xl items-center gap-1 px-2">
                 {LINKS.map(({ route: linkRoute, path, label, icon: Icon }) => (
                     <button
                         key={path}

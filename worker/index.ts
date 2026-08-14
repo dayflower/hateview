@@ -19,7 +19,14 @@ export interface Env {
 const FEED_URLS: Record<FeedId, string> = {
     all: "https://b.hatena.ne.jp/hotentry/all.rss",
     general: "https://b.hatena.ne.jp/hotentry/general.rss",
+    social: "https://b.hatena.ne.jp/hotentry/social.rss",
+    economics: "https://b.hatena.ne.jp/hotentry/economics.rss",
+    life: "https://b.hatena.ne.jp/hotentry/life.rss",
+    knowledge: "https://b.hatena.ne.jp/hotentry/knowledge.rss",
     it: "https://b.hatena.ne.jp/hotentry/it.rss",
+    entertainment: "https://b.hatena.ne.jp/hotentry/entertainment.rss",
+    game: "https://b.hatena.ne.jp/hotentry/game.rss",
+    fun: "https://b.hatena.ne.jp/hotentry/fun.rss",
 };
 
 const CACHE_TTL_SECONDS = 10 * 60;

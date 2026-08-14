@@ -12,7 +12,7 @@ export function ReadLaterPage() {
 
     if (entries.length === 0) {
         return (
-            <div className="mx-auto max-w-2xl p-4">
+            <div className="mx-auto max-w-4xl p-4">
                 <p className="text-gray-500">
                     あとで読む に追加したエントリーはまだありません。
                 </p>
@@ -21,7 +21,7 @@ export function ReadLaterPage() {
     }
 
     return (
-        <div className="mx-auto max-w-2xl p-4">
+        <div className="mx-auto max-w-4xl p-4">
             <ul>
                 {entries.map((entry) => (
                     <li
