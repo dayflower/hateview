@@ -117,10 +117,12 @@ export function EntryListPage() {
 
     return (
         <div className="mx-auto max-w-4xl p-4">
-            <CategoryFilterBar
-                selected={selectedCategory}
-                onSelect={selectCategory}
-            />
+            <div className="-mx-4 -mt-4 sticky top-12 z-10 mb-4 bg-white px-4 pt-4 pb-2 dark:bg-gray-950">
+                <CategoryFilterBar
+                    selected={selectedCategory}
+                    onSelect={selectCategory}
+                />
+            </div>
             <ul>
                 {visibleEntries.map((entry, index) => (
                     <EntryRow
