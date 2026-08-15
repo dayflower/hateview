@@ -36,7 +36,9 @@ export function ReadLaterPage() {
                             metaRow={
                                 <>
                                     {entry.bookmarkCount !== undefined && (
-                                        <span>{entry.bookmarkCount} users</span>
+                                        <span className="font-bold text-rose-500 dark:text-rose-400">
+                                            {entry.bookmarkCount} users
+                                        </span>
                                     )}
                                     {entry.category && (
                                         <CategoryBadge
