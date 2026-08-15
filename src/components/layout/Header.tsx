@@ -1,4 +1,5 @@
 import { Bookmark, Home, RefreshCw, Settings } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Route } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import { IconButton } from "../common/IconButton";
@@ -31,21 +32,54 @@ async function handleReload() {
 }
 
 export function Header({ route }: HeaderProps) {
+    const buttonRefs = useRef(new Map<Route["name"], HTMLButtonElement>());
+    const [indicatorRect, setIndicatorRect] = useState<{
+        left: number;
+        width: number;
+    }>();
+
+    useLayoutEffect(() => {
+        const button = buttonRefs.current.get(route.name);
+        if (button) {
+            setIndicatorRect({
+                left: button.offsetLeft,
+                width: button.offsetWidth,
+            });
+        }
+    }, [route.name]);
+
     return (
         <header className="sticky top-0 z-20 border-gray-200 border-b bg-white dark:border-gray-800 dark:bg-gray-950">
-            <nav className="mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
+            <nav className="relative mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
+                {indicatorRect && (
+                    <div
+                        aria-hidden="true"
+                        className="absolute bottom-0 h-0.5 bg-blue-600 transition-[left,width] duration-200 ease-out dark:bg-blue-400"
+                        style={{
+                            left: indicatorRect.left,
+                            width: indicatorRect.width,
+                        }}
+                    />
+                )}
                 {LINKS.map(({ route: linkRoute, path, label, icon: Icon }) => (
                     <button
                         key={path}
+                        ref={(el) => {
+                            if (el) {
+                                buttonRefs.current.set(linkRoute, el);
+                            } else {
+                                buttonRefs.current.delete(linkRoute);
+                            }
+                        }}
                         type="button"
                         onClick={() => navigate(path)}
                         aria-current={
                             route.name === linkRoute ? "page" : undefined
                         }
-                        className={`flex items-center gap-1.5 border-b-2 px-3 py-3 text-sm ${
+                        className={`flex items-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-sm transition-colors duration-200 ${
                             route.name === linkRoute
-                                ? "border-blue-600 text-blue-700 dark:text-blue-400"
-                                : "border-transparent text-gray-500 dark:text-gray-400"
+                                ? "text-blue-700 dark:text-blue-400"
+                                : "text-gray-500 dark:text-gray-400"
                         }`}
                     >
                         <Icon className="size-4" />
