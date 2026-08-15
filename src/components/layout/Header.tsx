@@ -1,6 +1,7 @@
-import { Bookmark, Home, Settings } from "lucide-react";
+import { Bookmark, Home, RefreshCw, Settings } from "lucide-react";
 import type { Route } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
+import { IconButton } from "../common/IconButton";
 
 interface HeaderProps {
     route: Route;
@@ -16,6 +17,18 @@ const LINKS: {
     { route: "later", path: "/later", label: "あとで読む", icon: Bookmark },
     { route: "settings", path: "/settings", label: "設定", icon: Settings },
 ];
+
+/** Installed desktop PWA windows commonly have no browser-chrome reload
+ *  control, so the app provides its own. `registration.update()` forces a
+ *  service-worker freshness check before reloading, so this also picks up a
+ *  newly deployed version instead of re-serving the stale precached shell. */
+async function handleReload() {
+    if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        await registration?.update();
+    }
+    window.location.reload();
+}
 
 export function Header({ route }: HeaderProps) {
     return (
@@ -39,6 +52,13 @@ export function Header({ route }: HeaderProps) {
                         {label}
                     </button>
                 ))}
+                <IconButton
+                    aria-label="再読み込み"
+                    className="ml-auto size-8"
+                    onClick={handleReload}
+                >
+                    <RefreshCw className="size-4" />
+                </IconButton>
             </nav>
         </header>
     );

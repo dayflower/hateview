@@ -31,7 +31,7 @@ const FEED_URLS: Record<FeedId, string> = {
 
 const CACHE_TTL_SECONDS = 10 * 60;
 const STAR_CACHE_TTL_SECONDS = 3 * 60;
-const BOOKMARKS_CACHE_TTL_SECONDS = 3 * 60;
+const BOOKMARKS_CACHE_TTL_SECONDS = 60;
 
 /** Hatena entry ids and usernames are both plain URL-safe tokens, so the same
  *  pattern checks either — the point is to keep separators out of the star
