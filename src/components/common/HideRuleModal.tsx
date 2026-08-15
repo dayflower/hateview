@@ -3,12 +3,15 @@ import { useEscapeKey } from "../../lib/hooks/useEscapeKey";
 import { HideRuleForm } from "./HideRuleForm";
 
 interface HideRuleModalProps {
+    /** When set, submitting edits this existing rule instead of adding a new one. */
+    ruleId?: string;
     initialDomain: string;
     initialTitle: string;
     onClose: () => void;
 }
 
 export function HideRuleModal({
+    ruleId,
     initialDomain,
     initialTitle,
     onClose,
@@ -40,9 +43,10 @@ export function HideRuleModal({
                     id="hide-rule-modal-title"
                     className="font-semibold text-gray-900 text-lg dark:text-gray-100"
                 >
-                    非表示条件を登録
+                    {ruleId ? "非表示条件を編集" : "非表示条件を登録"}
                 </h2>
                 <HideRuleForm
+                    ruleId={ruleId}
                     initialDomain={initialDomain}
                     initialTitleGlob={initialTitle}
                     domainInputRef={domainInputRef}
@@ -64,7 +68,7 @@ export function HideRuleModal({
                                 type="submit"
                                 className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
                             >
-                                登録
+                                {ruleId ? "保存" : "登録"}
                             </button>
                         </div>
                     }

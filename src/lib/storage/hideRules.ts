@@ -48,6 +48,17 @@ export function removeRule(id: string): void {
     save(load().filter((rule) => rule.id !== id));
 }
 
+export function updateRule(id: string, input: HideRuleInput): void {
+    const rules = load();
+    const rule = rules.find((r) => r.id === id);
+    if (!rule) {
+        return;
+    }
+    rule.domain = input.domain || undefined;
+    rule.titleGlob = input.titleGlob || undefined;
+    save(rules);
+}
+
 /**
  * Matches `glob` (`*` for any run of characters, `?` for exactly one) against
  * the whole of `text`, case-insensitively.
