@@ -228,7 +228,9 @@ export function EntryRow({
                     onTitleClick={() => navigate(entryPath(entry.url))}
                     metaRow={
                         <>
-                            <span>{entry.bookmarkCount} users</span>
+                            <span className="font-bold text-rose-500 dark:text-rose-400">
+                                {entry.bookmarkCount} users
+                            </span>
                             <FaviconImg domain={domain} />
                             <span>{domain}</span>
                             {entry.category && (
