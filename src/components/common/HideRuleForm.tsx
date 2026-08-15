@@ -7,6 +7,8 @@ import {
 import { useHideRules } from "../../lib/hooks/useHideRules.tsx";
 
 interface HideRuleFormProps {
+    /** When set, submitting edits this existing rule instead of adding a new one. */
+    ruleId?: string;
     initialDomain?: string;
     initialTitleGlob?: string;
     domainInputRef?: RefObject<HTMLInputElement | null>;
@@ -34,6 +36,7 @@ const VALIDATION_MESSAGE =
     "ドメインまたはタイトルパターンのいずれかを入力してください。";
 
 export function HideRuleForm({
+    ruleId,
     initialDomain = "",
     initialTitleGlob = "",
     domainInputRef,
@@ -47,7 +50,7 @@ export function HideRuleForm({
     onSubmitted,
     footer,
 }: HideRuleFormProps) {
-    const { addRule } = useHideRules();
+    const { addRule, updateRule } = useHideRules();
     const [domain, setDomain] = useState(initialDomain);
     const [titleGlob, setTitleGlob] = useState(initialTitleGlob);
     const [error, setError] = useState<string | null>(null);
@@ -62,12 +65,17 @@ export function HideRuleForm({
             }
             return;
         }
-        addRule({
+        const input = {
             domain: trimmedDomain || undefined,
             titleGlob: trimmedGlob || undefined,
-        });
-        setDomain("");
-        setTitleGlob("");
+        };
+        if (ruleId) {
+            updateRule(ruleId, input);
+        } else {
+            addRule(input);
+            setDomain("");
+            setTitleGlob("");
+        }
         setError(null);
         onSubmitted();
     };

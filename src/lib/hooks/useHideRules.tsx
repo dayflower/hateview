@@ -16,6 +16,7 @@ import * as hideRulesStore from "../storage/hideRules";
 interface HideRulesContextValue {
     rules: HideRule[];
     addRule: (input: HideRuleInput) => void;
+    updateRule: (id: string, input: HideRuleInput) => void;
     removeRule: (id: string) => void;
     isHidden: (entry: HideableEntry) => boolean;
 }
@@ -34,6 +35,11 @@ export function HideRulesProvider({ children }: { children: ReactNode }) {
         setRules(hideRulesStore.listRules());
     }, []);
 
+    const updateRule = useCallback((id: string, input: HideRuleInput) => {
+        hideRulesStore.updateRule(id, input);
+        setRules(hideRulesStore.listRules());
+    }, []);
+
     const removeRule = useCallback((id: string) => {
         hideRulesStore.removeRule(id);
         setRules(hideRulesStore.listRules());
@@ -47,8 +53,8 @@ export function HideRulesProvider({ children }: { children: ReactNode }) {
     );
 
     const value = useMemo<HideRulesContextValue>(
-        () => ({ rules, addRule, removeRule, isHidden }),
-        [rules, addRule, removeRule, isHidden],
+        () => ({ rules, addRule, updateRule, removeRule, isHidden }),
+        [rules, addRule, updateRule, removeRule, isHidden],
     );
 
     return (

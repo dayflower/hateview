@@ -1,10 +1,13 @@
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { HideRuleForm } from "../components/common/HideRuleForm";
+import { HideRuleModal } from "../components/common/HideRuleModal";
 import { PillTabBar } from "../components/common/PillTabBar";
 import { ALL_CATEGORIES } from "../lib/categories";
 import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useTheme } from "../lib/hooks/useTheme.tsx";
+import type { HideRule } from "../lib/storage/hideRules";
 import type { ThemeSetting } from "../lib/storage/theme";
 
 const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
@@ -18,6 +21,7 @@ export function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const { visibleCategories, isCategoryVisible, setCategoryVisible } =
         useCategoryVisibility();
+    const [editingRule, setEditingRule] = useState<HideRule | null>(null);
 
     return (
         <div className="mx-auto max-w-4xl p-4">
@@ -103,17 +107,36 @@ export function SettingsPage() {
                                 <span>title: {rule.titleGlob}</span>
                             )}
                         </span>
-                        <button
-                            type="button"
-                            aria-label="ルールを削除"
-                            onClick={() => removeRule(rule.id)}
-                            className="text-gray-500 hover:text-red-600"
-                        >
-                            <Trash2 className="size-4" />
-                        </button>
+                        <span className="flex gap-3">
+                            <button
+                                type="button"
+                                aria-label="ルールを編集"
+                                onClick={() => setEditingRule(rule)}
+                                className="text-gray-500 hover:text-blue-600"
+                            >
+                                <Pencil className="size-4" />
+                            </button>
+                            <button
+                                type="button"
+                                aria-label="ルールを削除"
+                                onClick={() => removeRule(rule.id)}
+                                className="text-gray-500 hover:text-red-600"
+                            >
+                                <Trash2 className="size-4" />
+                            </button>
+                        </span>
                     </li>
                 ))}
             </ul>
+
+            {editingRule && (
+                <HideRuleModal
+                    ruleId={editingRule.id}
+                    initialDomain={editingRule.domain ?? ""}
+                    initialTitle={editingRule.titleGlob ?? ""}
+                    onClose={() => setEditingRule(null)}
+                />
+            )}
         </div>
     );
 }
