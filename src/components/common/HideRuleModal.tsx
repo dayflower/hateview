@@ -17,6 +17,7 @@ export function HideRuleModal({
     onClose,
 }: HideRuleModalProps) {
     const domainInputRef = useRef<HTMLInputElement>(null);
+    const pointerDownOnOverlayRef = useRef(false);
 
     useEffect(() => {
         domainInputRef.current?.focus();
@@ -29,14 +30,24 @@ export function HideRuleModal({
         // biome-ignore lint/a11y/useKeyWithClickEvents: same as above
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={onClose}
+            onPointerDown={(event) => {
+                // Close only on a click that both starts and ends on the overlay,
+                // so dragging out of the dialog (e.g. selecting text) keeps it open.
+                pointerDownOnOverlayRef.current =
+                    event.target === event.currentTarget;
+            }}
+            onClick={(event) => {
+                const startedOnOverlay = pointerDownOnOverlayRef.current;
+                pointerDownOnOverlayRef.current = false;
+                if (startedOnOverlay && event.target === event.currentTarget) {
+                    onClose();
+                }
+            }}
         >
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops the overlay's click-to-close from firing when clicking inside the dialog; not itself an interactive control */}
             <div
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="hide-rule-modal-title"
-                onClick={(event) => event.stopPropagation()}
                 className="w-full max-w-sm rounded-lg bg-white p-4 shadow-lg dark:bg-gray-900"
             >
                 <h2
