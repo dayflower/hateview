@@ -20,6 +20,7 @@ const LINKS: {
 ];
 
 export function Header({ route }: HeaderProps) {
+    const navRef = useRef<HTMLElement>(null);
     const buttonRefs = useRef(new Map<Route["name"], HTMLButtonElement>());
     const [indicatorRect, setIndicatorRect] = useState<{
         left: number;
@@ -48,19 +49,38 @@ export function Header({ route }: HeaderProps) {
         window.location.reload();
     };
 
+    /** The indicator is positioned from measured pixels, so it has to be
+     *  re-measured whenever the buttons change size — not only on navigation
+     *  but also when the viewport crosses the breakpoint that hides the link
+     *  labels. */
     useLayoutEffect(() => {
-        const button = buttonRefs.current.get(route.name);
-        if (button) {
-            setIndicatorRect({
-                left: button.offsetLeft,
-                width: button.offsetWidth,
-            });
+        const updateIndicator = () => {
+            const button = buttonRefs.current.get(route.name);
+            if (button) {
+                setIndicatorRect({
+                    left: button.offsetLeft,
+                    width: button.offsetWidth,
+                });
+            }
+        };
+
+        updateIndicator();
+
+        const nav = navRef.current;
+        if (!nav) {
+            return;
         }
+        const observer = new ResizeObserver(updateIndicator);
+        observer.observe(nav);
+        return () => observer.disconnect();
     }, [route.name]);
 
     return (
         <header className="sticky top-0 z-20 border-gray-200 border-b bg-white dark:border-gray-800 dark:bg-gray-950">
-            <nav className="relative mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
+            <nav
+                ref={navRef}
+                className="relative mx-auto flex h-12 max-w-4xl items-center gap-1 px-2"
+            >
                 {indicatorRect && (
                     <div
                         aria-hidden="true"
@@ -83,6 +103,8 @@ export function Header({ route }: HeaderProps) {
                         }}
                         type="button"
                         onClick={() => navigate(path)}
+                        aria-label={label}
+                        title={label}
                         aria-current={
                             route.name === linkRoute ? "page" : undefined
                         }
@@ -92,8 +114,8 @@ export function Header({ route }: HeaderProps) {
                                 : "text-gray-500 dark:text-gray-400"
                         }`}
                     >
-                        <Icon className="size-4" />
-                        {label}
+                        <Icon className="size-4 shrink-0" />
+                        <span className="hidden sm:inline">{label}</span>
                     </button>
                 ))}
                 <IconButton
