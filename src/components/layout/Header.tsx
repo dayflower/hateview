@@ -19,24 +19,34 @@ const LINKS: {
     { route: "settings", path: "/settings", label: "設定", icon: Settings },
 ];
 
-/** Installed desktop PWA windows commonly have no browser-chrome reload
- *  control, so the app provides its own. `registration.update()` forces a
- *  service-worker freshness check before reloading, so this also picks up a
- *  newly deployed version instead of re-serving the stale precached shell. */
-async function handleReload() {
-    if ("serviceWorker" in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        await registration?.update();
-    }
-    window.location.reload();
-}
-
 export function Header({ route }: HeaderProps) {
     const buttonRefs = useRef(new Map<Route["name"], HTMLButtonElement>());
     const [indicatorRect, setIndicatorRect] = useState<{
         left: number;
         width: number;
     }>();
+    const [reloading, setReloading] = useState(false);
+
+    /** Installed desktop PWA windows commonly have no browser-chrome reload
+     *  control, so the app provides its own. `registration.update()` forces a
+     *  service-worker freshness check before reloading, so this also picks up
+     *  a newly deployed version instead of re-serving the stale precached
+     *  shell. That check is a network round-trip, and the old document stays
+     *  on screen until the reloaded one paints, so the button spins for the
+     *  whole wait to show the click was registered. */
+    const handleReload = async () => {
+        setReloading(true);
+        if ("serviceWorker" in navigator) {
+            try {
+                const registration =
+                    await navigator.serviceWorker.getRegistration();
+                await registration?.update();
+            } catch {
+                // A failed freshness check shouldn't block the reload itself.
+            }
+        }
+        window.location.reload();
+    };
 
     useLayoutEffect(() => {
         const button = buttonRefs.current.get(route.name);
@@ -90,8 +100,11 @@ export function Header({ route }: HeaderProps) {
                     aria-label="再読み込み"
                     className="ml-auto size-8"
                     onClick={handleReload}
+                    disabled={reloading}
                 >
-                    <RefreshCw className="size-4" />
+                    <RefreshCw
+                        className={`size-4 ${reloading ? "animate-spin" : ""}`}
+                    />
                 </IconButton>
             </nav>
         </header>

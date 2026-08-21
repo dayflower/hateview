@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { HideRuleModal } from "../components/common/HideRuleModal";
+import { LoadingIndicator } from "../components/common/LoadingIndicator";
 import type { CategoryFilter } from "../components/entry-list/CategoryFilterBar";
 import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
@@ -106,15 +107,8 @@ export function EntryListPage() {
         onSelect: handleSelect,
     });
 
-    if (loading) {
-        return <p className="p-4 text-gray-500">読み込み中...</p>;
-    }
-    if (error) {
-        return (
-            <p className="p-4 text-red-600">読み込みに失敗しました: {error}</p>
-        );
-    }
-
+    // The category bar stays mounted while a feed loads or fails, so that
+    // switching categories doesn't make the tabs flicker in and out.
     return (
         <div className="mx-auto max-w-4xl p-4">
             <div className="-mx-4 -mt-4 sticky top-12 z-10 mb-4 bg-white px-4 pt-4 pb-2 dark:bg-gray-950">
@@ -123,21 +117,27 @@ export function EntryListPage() {
                     onSelect={selectCategory}
                 />
             </div>
-            <ul>
-                {visibleEntries.map((entry, index) => (
-                    <EntryRow
-                        key={entry.url}
-                        entry={entry}
-                        focused={index === focusedIndex}
-                        isNew={newUrls.has(entry.url)}
-                        onSeen={markSeen}
-                        onRequestHide={setHideModalEntry}
-                        itemRef={(el) => {
-                            itemRefs.current[index] = el;
-                        }}
-                    />
-                ))}
-            </ul>
+            {loading ? (
+                <LoadingIndicator />
+            ) : error ? (
+                <p className="text-red-600">読み込みに失敗しました: {error}</p>
+            ) : (
+                <ul>
+                    {visibleEntries.map((entry, index) => (
+                        <EntryRow
+                            key={entry.url}
+                            entry={entry}
+                            focused={index === focusedIndex}
+                            isNew={newUrls.has(entry.url)}
+                            onSeen={markSeen}
+                            onRequestHide={setHideModalEntry}
+                            itemRef={(el) => {
+                                itemRefs.current[index] = el;
+                            }}
+                        />
+                    ))}
+                </ul>
+            )}
             {hideModalEntry && (
                 <HideRuleModal
                     initialDomain={new URL(hideModalEntry.url).hostname}
