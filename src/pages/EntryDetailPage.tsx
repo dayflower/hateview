@@ -8,6 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { HideRuleModal } from "../components/common/HideRuleModal";
+import { LoadingIndicator } from "../components/common/LoadingIndicator";
 import { PillTabBar } from "../components/common/PillTabBar";
 import { Thumbnail } from "../components/common/Thumbnail";
 import type { BookmarkSortOrder } from "../components/entry-detail/BookmarkList";
@@ -78,11 +79,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     }, [url, state.data, sortOrder, stars]);
 
     if (state.loading) {
-        return (
-            <p className="p-4 text-gray-500 dark:text-gray-400">
-                読み込み中...
-            </p>
-        );
+        return <LoadingIndicator />;
     }
     if (state.error || !state.data) {
         return (
