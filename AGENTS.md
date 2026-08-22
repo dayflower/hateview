@@ -107,6 +107,9 @@ in `src/main.tsx`:
 
 - `useHideRules` / `storage/hideRules.ts` — domain + title-glob rules for
   hiding entries
+- `useDetailTarget` / `storage/detailTarget.ts` — whether opening an entry
+  goes to the app's own detail page or straight to Hatena's bookmark entry
+  page (the settings UI presents this on one axis with the bookmark source)
 - `useReadLater` / `storage/readLater.ts` — saved-for-later list
 - `useReadTracking` / `storage/readTracking.ts` — read/unread state
 - `useRemovedEntries` / `storage/removedEntries.ts` — manually dismissed rows

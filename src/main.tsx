@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import { BookmarkSourceProvider } from "./lib/hooks/useBookmarkSource.tsx";
 import { CategoryVisibilityProvider } from "./lib/hooks/useCategoryVisibility.tsx";
+import { DetailTargetProvider } from "./lib/hooks/useDetailTarget.tsx";
 import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadLaterProvider } from "./lib/hooks/useReadLater.tsx";
 import { ReadTrackingProvider } from "./lib/hooks/useReadTracking.tsx";
@@ -15,17 +16,19 @@ createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ThemeProvider>
             <BookmarkSourceProvider>
-                <ReadTrackingProvider>
-                    <HideRulesProvider>
-                        <ReadLaterProvider>
-                            <RemovedEntriesProvider>
-                                <CategoryVisibilityProvider>
-                                    <App />
-                                </CategoryVisibilityProvider>
-                            </RemovedEntriesProvider>
-                        </ReadLaterProvider>
-                    </HideRulesProvider>
-                </ReadTrackingProvider>
+                <DetailTargetProvider>
+                    <ReadTrackingProvider>
+                        <HideRulesProvider>
+                            <ReadLaterProvider>
+                                <RemovedEntriesProvider>
+                                    <CategoryVisibilityProvider>
+                                        <App />
+                                    </CategoryVisibilityProvider>
+                                </RemovedEntriesProvider>
+                            </ReadLaterProvider>
+                        </HideRulesProvider>
+                    </ReadTrackingProvider>
+                </DetailTargetProvider>
             </BookmarkSourceProvider>
         </ThemeProvider>
     </StrictMode>,

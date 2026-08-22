@@ -8,9 +8,8 @@ import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useEntries } from "../lib/hooks/useEntries";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
+import { useOpenEntryDetail } from "../lib/hooks/useOpenEntryDetail";
 import { useRemovedEntries } from "../lib/hooks/useRemovedEntries.tsx";
-import { entryPath } from "../router/routes";
-import { navigate } from "../router/useHashRoute";
 import type { Entry } from "../types/entry";
 
 /** Remembers the selected category and scroll position across mount/unmount
@@ -34,6 +33,7 @@ export function EntryListPage() {
         useEntries(selectedCategory);
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
+    const openDetail = useOpenEntryDetail();
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
     const itemRefs = useRef<(HTMLLIElement | null)[]>([]);
@@ -96,7 +96,7 @@ export function EntryListPage() {
     const handleSelect = (index: number) => {
         const entry = visibleEntries[index];
         if (entry) {
-            navigate(entryPath(entry.url));
+            openDetail(entry.url);
         }
     };
 
