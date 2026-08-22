@@ -2,13 +2,13 @@ import { ExternalLink, X } from "lucide-react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { EntrySummary } from "../components/common/EntrySummary";
 import { iconButtonClass } from "../components/common/IconButton";
+import { useOpenEntryDetail } from "../lib/hooks/useOpenEntryDetail";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { safeExternalUrl } from "../lib/url/externalUrl";
-import { entryPath } from "../router/routes";
-import { navigate } from "../router/useHashRoute";
 
 export function ReadLaterPage() {
     const { entries, remove } = useReadLater();
+    const openDetail = useOpenEntryDetail();
 
     if (entries.length === 0) {
         return (
@@ -32,7 +32,7 @@ export function ReadLaterPage() {
                             title={entry.title}
                             description={entry.description}
                             imageUrl={entry.imageUrl}
-                            onTitleClick={() => navigate(entryPath(entry.url))}
+                            onTitleClick={() => openDetail(entry.url)}
                             metaRow={
                                 <>
                                     {entry.bookmarkCount !== undefined && (

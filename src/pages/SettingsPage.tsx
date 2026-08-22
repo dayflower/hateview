@@ -6,6 +6,7 @@ import { PillTabBar } from "../components/common/PillTabBar";
 import { ALL_CATEGORIES } from "../lib/categories";
 import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
 import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
+import { useDetailTarget } from "../lib/hooks/useDetailTarget.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useTheme } from "../lib/hooks/useTheme.tsx";
 import type { HideRule } from "../lib/storage/hideRules";
@@ -18,18 +19,38 @@ const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
     { id: "system", label: "システムに従う" },
 ];
 
-const BOOKMARK_SOURCE_OPTIONS: { id: BookmarkSource; label: string }[] = [
+/** The bookmark source and the detail target are stored separately, but the
+ *  user picks between them on a single axis: two ways of building the in-app
+ *  detail page, plus skipping it altogether. Keeping the sources stored apart
+ *  means switching back from "official" restores the source last chosen. */
+type DetailViewOption = BookmarkSource | "official";
+
+const DETAIL_VIEW_OPTIONS: { id: DetailViewOption; label: string }[] = [
     { id: "json", label: "json" },
     { id: "jsonlite", label: "jsonlite" },
+    { id: "official", label: "本家ページ" },
 ];
 
 export function SettingsPage() {
     const { rules, removeRule } = useHideRules();
     const { theme, setTheme } = useTheme();
     const { bookmarkSource, setBookmarkSource } = useBookmarkSource();
+    const { detailTarget, setDetailTarget } = useDetailTarget();
     const { visibleCategories, isCategoryVisible, setCategoryVisible } =
         useCategoryVisibility();
     const [editingRule, setEditingRule] = useState<HideRule | null>(null);
+
+    const selectedDetailView: DetailViewOption =
+        detailTarget === "official" ? "official" : bookmarkSource;
+
+    const handleDetailViewSelect = (id: DetailViewOption) => {
+        if (id === "official") {
+            setDetailTarget("official");
+            return;
+        }
+        setBookmarkSource(id);
+        setDetailTarget("app");
+    };
 
     return (
         <div className="mx-auto max-w-4xl p-4">
@@ -42,17 +63,19 @@ export function SettingsPage() {
             />
 
             <h1 className="mt-8 font-semibold text-lg">
-                ブックマーク件数・コメントの取得元
+                エントリーを開いたときの表示
             </h1>
             <p className="mt-1 text-gray-500 text-sm">
-                エントリー詳細画面のブックマーク件数・コメント一覧をはてなのどのAPIから取得するかを選択します。
+                一覧からエントリーを開いたときの表示を選択します。json /
+                jsonlite
+                は、アプリ内の詳細画面のブックマーク件数・コメント一覧をはてなのどのAPIから取得するかの選択です。本家ページを選ぶと、詳細画面を経由せずはてなブックマークのエントリーページを直接開きます。
             </p>
             <div className="mt-4">
                 <PillTabBar
-                    options={BOOKMARK_SOURCE_OPTIONS}
-                    selected={bookmarkSource}
-                    onSelect={setBookmarkSource}
-                    ariaLabel="ブックマーク件数・コメントの取得元"
+                    options={DETAIL_VIEW_OPTIONS}
+                    selected={selectedDetailView}
+                    onSelect={handleDetailViewSelect}
+                    ariaLabel="エントリーを開いたときの表示"
                 />
             </div>
 

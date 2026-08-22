@@ -13,13 +13,12 @@ import { createPortal } from "react-dom";
 import { toReadLaterSnapshot } from "../../lib/entry/readLaterSnapshot";
 import { useConfirmAction } from "../../lib/hooks/useConfirmAction";
 import { useDropdownMenu } from "../../lib/hooks/useDropdownMenu";
+import { useOpenEntryDetail } from "../../lib/hooks/useOpenEntryDetail";
 import { useReadLater } from "../../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../../lib/hooks/useRemovedEntries.tsx";
 import { useRowRemoval } from "../../lib/hooks/useRowRemoval";
 import { safeExternalUrl } from "../../lib/url/externalUrl";
-import { entryPath } from "../../router/routes";
-import { navigate } from "../../router/useHashRoute";
 import type { Entry } from "../../types/entry";
 import { CategoryBadge } from "../common/CategoryBadge";
 import { EntrySummary } from "../common/EntrySummary";
@@ -53,6 +52,7 @@ export function EntryRow({
     const { isRead, markRead, markUnread } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
     const { removeEntry } = useRemovedEntries();
+    const openDetail = useOpenEntryDetail();
     const domain = new URL(entry.url).hostname;
     const read = isRead(entry.url);
     const marked = isMarked(entry.url);
@@ -94,7 +94,7 @@ export function EntryRow({
         };
     }, []);
 
-    // A click schedules the detail-page navigation after a short delay
+    // A click schedules the detail navigation after a short delay
     // instead of firing it immediately, so that a dblclick landing shortly
     // after (browsers always fire click, click, dblclick in that order) can
     // still cancel it in favor of opening the original article.
@@ -107,7 +107,7 @@ export function EntryRow({
         }
         pendingNavigateRef.current = setTimeout(() => {
             pendingNavigateRef.current = null;
-            navigate(entryPath(entry.url));
+            openDetail(entry.url);
         }, DOUBLE_CLICK_GUARD_MS);
     };
 
@@ -225,7 +225,7 @@ export function EntryRow({
                     title={entry.title}
                     description={entry.description}
                     imageUrl={entry.imageUrl}
-                    onTitleClick={() => navigate(entryPath(entry.url))}
+                    onTitleClick={() => openDetail(entry.url)}
                     metaRow={
                         <>
                             <span className="font-bold text-rose-500 dark:text-rose-400">

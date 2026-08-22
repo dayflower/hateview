@@ -1,12 +1,19 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DetailTargetProvider } from "../../lib/hooks/useDetailTarget.tsx";
 import { ReadLaterProvider } from "../../lib/hooks/useReadLater.tsx";
 import { ReadTrackingProvider } from "../../lib/hooks/useReadTracking.tsx";
 import { RemovedEntriesProvider } from "../../lib/hooks/useRemovedEntries.tsx";
+import { DETAIL_TARGET_STORAGE_KEY } from "../../lib/storage/detailTarget";
+import { navigateExternal } from "../../lib/url/navigateExternal";
 import { entryPath } from "../../router/routes";
 import type { Entry } from "../../types/entry";
 import { EntryRow } from "./EntryRow";
+
+vi.mock("../../lib/url/navigateExternal", () => ({
+    navigateExternal: vi.fn(),
+}));
 
 const SAMPLE_ENTRY: Entry = {
     url: "https://example.com/article",
@@ -22,16 +29,18 @@ const SAMPLE_ENTRY: Entry = {
 function renderEntryRow() {
     const onRequestHide = vi.fn();
     render(
-        <ReadTrackingProvider>
-            <ReadLaterProvider>
-                <RemovedEntriesProvider>
-                    <EntryRow
-                        entry={SAMPLE_ENTRY}
-                        onRequestHide={onRequestHide}
-                    />
-                </RemovedEntriesProvider>
-            </ReadLaterProvider>
-        </ReadTrackingProvider>,
+        <DetailTargetProvider>
+            <ReadTrackingProvider>
+                <ReadLaterProvider>
+                    <RemovedEntriesProvider>
+                        <EntryRow
+                            entry={SAMPLE_ENTRY}
+                            onRequestHide={onRequestHide}
+                        />
+                    </RemovedEntriesProvider>
+                </ReadLaterProvider>
+            </ReadTrackingProvider>
+        </DetailTargetProvider>,
     );
     return { onRequestHide };
 }
@@ -39,6 +48,7 @@ function renderEntryRow() {
 beforeEach(() => {
     localStorage.clear();
     window.location.hash = "";
+    vi.mocked(navigateExternal).mockClear();
 });
 
 afterEach(() => {
@@ -79,6 +89,27 @@ describe("tap navigation", () => {
         expect(window.location.hash).toBe("");
 
         openSpy.mockRestore();
+    });
+
+    it("leaves for the official bookmark page when that target is set", async () => {
+        localStorage.setItem(
+            DETAIL_TARGET_STORAGE_KEY,
+            JSON.stringify("official"),
+        );
+        const user = userEvent.setup();
+        renderEntryRow();
+
+        await user.click(screen.getByText(SAMPLE_ENTRY.description));
+
+        await waitFor(() => {
+            expect(navigateExternal).toHaveBeenCalledWith(
+                "https://b.hatena.ne.jp/entry/s/example.com/article",
+            );
+        });
+        // The in-app detail route is skipped entirely.
+        expect(window.location.hash).toBe("");
+        // The detail page would normally be what marks it read.
+        expect(screen.getByRole("button", { name: "未読に戻す" })).toBeTruthy();
     });
 });
 
