@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { BookmarkSourceProvider } from "./lib/hooks/useBookmarkSource.tsx";
 import { CategoryVisibilityProvider } from "./lib/hooks/useCategoryVisibility.tsx";
 import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadLaterProvider } from "./lib/hooks/useReadLater.tsx";
@@ -13,17 +14,19 @@ import "./styles/index.css";
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <ThemeProvider>
-            <ReadTrackingProvider>
-                <HideRulesProvider>
-                    <ReadLaterProvider>
-                        <RemovedEntriesProvider>
-                            <CategoryVisibilityProvider>
-                                <App />
-                            </CategoryVisibilityProvider>
-                        </RemovedEntriesProvider>
-                    </ReadLaterProvider>
-                </HideRulesProvider>
-            </ReadTrackingProvider>
+            <BookmarkSourceProvider>
+                <ReadTrackingProvider>
+                    <HideRulesProvider>
+                        <ReadLaterProvider>
+                            <RemovedEntriesProvider>
+                                <CategoryVisibilityProvider>
+                                    <App />
+                                </CategoryVisibilityProvider>
+                            </RemovedEntriesProvider>
+                        </ReadLaterProvider>
+                    </HideRulesProvider>
+                </ReadTrackingProvider>
+            </BookmarkSourceProvider>
         </ThemeProvider>
     </StrictMode>,
 );

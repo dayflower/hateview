@@ -1,4 +1,5 @@
 import type {
+    BookmarkSource,
     HatenaBookmark,
     HatenaJsonliteResponse,
 } from "../src/types/bookmark.ts";
@@ -80,6 +81,15 @@ function withSecurityHeaders(response: Response): Response {
 
 function isFeedId(value: string): value is FeedId {
     return value in FEED_URLS;
+}
+
+const DEFAULT_BOOKMARK_SOURCE: BookmarkSource = "json";
+
+/** Falls back to `DEFAULT_BOOKMARK_SOURCE` for a missing/unrecognized value,
+ *  so an old client (or a typo) still gets a valid response. */
+function bookmarkSourceParam(url: URL): BookmarkSource {
+    const value = url.searchParams.get("source");
+    return value === "jsonlite" ? "jsonlite" : DEFAULT_BOOKMARK_SOURCE;
 }
 
 function errorResponse(status: number, message: string): Response {
@@ -193,11 +203,18 @@ function entryUrlParam(url: URL): string | null {
         : null;
 }
 
-/** Keyed on the entry url alone, so unrelated query parameters can neither
- *  bypass the cache nor create a separate entry for the same lookup. */
-function apiCacheKey(request: Request, path: string, target: string): Request {
+/** Keyed on an explicit allow-list of params, so unrelated query parameters
+ *  can neither bypass the cache nor create a separate entry for the same
+ *  lookup. */
+function apiCacheKey(
+    request: Request,
+    path: string,
+    params: Record<string, string>,
+): Request {
     const key = new URL(path, request.url);
-    key.searchParams.set("url", target);
+    for (const [name, value] of Object.entries(params)) {
+        key.searchParams.set(name, value);
+    }
     return new Request(key);
 }
 
@@ -229,10 +246,14 @@ function loadBookmarkEntry(
     request: Request,
     ctx: ExecutionContext,
     target: string,
+    source: BookmarkSource,
 ): Promise<Response> {
-    const cacheKeyRequest = apiCacheKey(request, "/api/bookmarks", target);
+    const cacheKeyRequest = apiCacheKey(request, "/api/bookmarks", {
+        url: target,
+        source,
+    });
     return cachedJson(cacheKeyRequest, ctx, BOOKMARKS_CACHE_TTL_SECONDS, () =>
-        fetchBookmarkEntry(target),
+        fetchBookmarkEntry(target, source),
     );
 }
 
@@ -247,7 +268,7 @@ async function handleBookmarks(
     }
 
     return withUpstreamErrorHandling("bookmarks", () =>
-        loadBookmarkEntry(request, ctx, target),
+        loadBookmarkEntry(request, ctx, target, bookmarkSourceParam(url)),
     );
 }
 
@@ -255,8 +276,9 @@ async function countStarsFor(
     request: Request,
     ctx: ExecutionContext,
     target: string,
+    source: BookmarkSource,
 ): Promise<StarCountsResponse> {
-    const entryResponse = await loadBookmarkEntry(request, ctx, target);
+    const entryResponse = await loadBookmarkEntry(request, ctx, target, source);
     const entry = (await entryResponse.json()) as HatenaJsonliteResponse | null;
     const stars =
         entry && URL_SAFE_TOKEN_PATTERN.test(entry.eid)
@@ -275,13 +297,17 @@ async function handleStars(
         return errorResponse(400, "invalid url");
     }
 
-    // The response is now a function of the entry url alone — the bookmarks to
-    // look up are derived here rather than supplied by the caller — so the
-    // cache key describes the response exactly.
-    const cacheKeyRequest = apiCacheKey(request, "/api/stars", target);
+    // The response is now a function of the entry url and bookmark source —
+    // the bookmarks to look up are derived here rather than supplied by the
+    // caller — so the cache key describes the response exactly.
+    const source = bookmarkSourceParam(url);
+    const cacheKeyRequest = apiCacheKey(request, "/api/stars", {
+        url: target,
+        source,
+    });
     return withUpstreamErrorHandling("star", () =>
         cachedJson(cacheKeyRequest, ctx, STAR_CACHE_TTL_SECONDS, () =>
-            countStarsFor(request, ctx, target),
+            countStarsFor(request, ctx, target, source),
         ),
     );
 }

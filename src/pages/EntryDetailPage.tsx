@@ -20,6 +20,7 @@ import {
 import { fetchStarCounts } from "../lib/api/hatenaStarApi";
 import { toReadLaterSnapshot } from "../lib/entry/readLaterSnapshot";
 import { useAsyncData } from "../lib/hooks/useAsyncData";
+import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
 import { findCachedEntry } from "../lib/hooks/useEntries";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
@@ -41,7 +42,11 @@ interface EntryDetailPageProps {
 export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const { markRead } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
-    const state = useAsyncData(() => fetchEntryBookmarks(url), [url]);
+    const { bookmarkSource } = useBookmarkSource();
+    const state = useAsyncData(
+        () => fetchEntryBookmarks(url, bookmarkSource),
+        [url, bookmarkSource],
+    );
     const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
     const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("star");
     const [hideModalOpen, setHideModalOpen] = useState(false);
@@ -53,6 +58,13 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         }
     }, [state.data, url, markRead]);
 
+    // A different entry or a different source invalidates the previously
+    // fetched star counts.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: url/bookmarkSource are reset triggers, not values the effect body reads
+    useEffect(() => {
+        setStars(null);
+    }, [url, bookmarkSource]);
+
     useEffect(() => {
         // Star counts are only needed for the "star" sort order, and
         // fetching them is comparatively slow, so defer the request until
@@ -62,7 +74,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         }
         let cancelled = false;
 
-        fetchStarCounts(url)
+        fetchStarCounts(url, bookmarkSource)
             .then((counts) => {
                 if (!cancelled) {
                     setStars(counts);
@@ -76,7 +88,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         return () => {
             cancelled = true;
         };
-    }, [url, state.data, sortOrder, stars]);
+    }, [url, bookmarkSource, state.data, sortOrder, stars]);
 
     if (state.loading) {
         return <LoadingIndicator />;
