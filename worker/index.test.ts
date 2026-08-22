@@ -88,6 +88,11 @@ function createFakeUpstream() {
                 status: 200,
             });
         }
+        if (url.includes("/entry/json/")) {
+            return new Response(JSON.stringify(SAMPLE_JSONLITE), {
+                status: 200,
+            });
+        }
         if (url.includes("s.hatena.ne.jp")) {
             return new Response(
                 JSON.stringify({
@@ -282,12 +287,24 @@ describe("worker fetch handler", () => {
         `https://hateview.example/api/stars?${params}`;
     const urlParam = `url=${encodeURIComponent(ENTRY_URL)}`;
 
-    it("returns the bookmark listing for an entry url", async () => {
+    it("returns the bookmark listing for an entry url, defaulting to the json source", async () => {
         const response = await call(new Request(bookmarksUrl(urlParam)));
 
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual(SAMPLE_JSONLITE);
+        expect(upstreamCalls("/entry/json/")).toHaveLength(1);
+        expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(0);
+    });
+
+    it("fetches the jsonlite source when explicitly requested", async () => {
+        const response = await call(
+            new Request(bookmarksUrl(`${urlParam}&source=jsonlite`)),
+        );
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual(SAMPLE_JSONLITE);
         expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
+        expect(upstreamCalls("/entry/json/")).toHaveLength(0);
     });
 
     it("serves a repeated bookmark listing from cache", async () => {
@@ -295,6 +312,15 @@ describe("worker fetch handler", () => {
         await Promise.all(pending);
         await call(new Request(bookmarksUrl(`${urlParam}&extra=1`)));
 
+        expect(upstreamCalls("/entry/json/")).toHaveLength(1);
+    });
+
+    it("caches the json and jsonlite sources separately", async () => {
+        await call(new Request(bookmarksUrl(urlParam)));
+        await Promise.all(pending);
+        await call(new Request(bookmarksUrl(`${urlParam}&source=jsonlite`)));
+
+        expect(upstreamCalls("/entry/json/")).toHaveLength(1);
         expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
     });
 
@@ -336,7 +362,7 @@ describe("worker fetch handler", () => {
 
         await call(new Request(starsUrl(urlParam)));
 
-        expect(upstreamCalls("/entry/jsonlite/")).toHaveLength(1);
+        expect(upstreamCalls("/entry/json/")).toHaveLength(1);
     });
 
     it("returns no stars for a url nobody has bookmarked", async () => {

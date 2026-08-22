@@ -4,11 +4,13 @@ import { HideRuleForm } from "../components/common/HideRuleForm";
 import { HideRuleModal } from "../components/common/HideRuleModal";
 import { PillTabBar } from "../components/common/PillTabBar";
 import { ALL_CATEGORIES } from "../lib/categories";
+import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
 import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useTheme } from "../lib/hooks/useTheme.tsx";
 import type { HideRule } from "../lib/storage/hideRules";
 import type { ThemeSetting } from "../lib/storage/theme";
+import type { BookmarkSource } from "../types/bookmark";
 
 const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
     { id: "light", label: "ライト" },
@@ -16,9 +18,15 @@ const THEME_OPTIONS: { id: ThemeSetting; label: string }[] = [
     { id: "system", label: "システムに従う" },
 ];
 
+const BOOKMARK_SOURCE_OPTIONS: { id: BookmarkSource; label: string }[] = [
+    { id: "json", label: "json" },
+    { id: "jsonlite", label: "jsonlite" },
+];
+
 export function SettingsPage() {
     const { rules, removeRule } = useHideRules();
     const { theme, setTheme } = useTheme();
+    const { bookmarkSource, setBookmarkSource } = useBookmarkSource();
     const { visibleCategories, isCategoryVisible, setCategoryVisible } =
         useCategoryVisibility();
     const [editingRule, setEditingRule] = useState<HideRule | null>(null);
@@ -32,6 +40,21 @@ export function SettingsPage() {
                 onSelect={setTheme}
                 ariaLabel="テーマ"
             />
+
+            <h1 className="mt-8 font-semibold text-lg">
+                ブックマーク件数・コメントの取得元
+            </h1>
+            <p className="mt-1 text-gray-500 text-sm">
+                エントリー詳細画面のブックマーク件数・コメント一覧をはてなのどのAPIから取得するかを選択します。
+            </p>
+            <div className="mt-4">
+                <PillTabBar
+                    options={BOOKMARK_SOURCE_OPTIONS}
+                    selected={bookmarkSource}
+                    onSelect={setBookmarkSource}
+                    ariaLabel="ブックマーク件数・コメントの取得元"
+                />
+            </div>
 
             <h1 className="mt-8 font-semibold text-lg">表示カテゴリ設定</h1>
             <p className="mt-1 text-gray-500 text-sm">

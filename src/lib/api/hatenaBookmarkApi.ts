@@ -1,12 +1,19 @@
-import type { HatenaJsonliteResponse } from "../../types/bookmark";
+import type {
+    BookmarkSource,
+    HatenaJsonliteResponse,
+} from "../../types/bookmark";
 import { apiGet } from "./apiClient";
 
 /** Resolves to `null` for a url nobody has bookmarked, matching what Hatena
  *  reports through the worker. */
 export function fetchEntryBookmarks(
     url: string,
+    source: BookmarkSource,
 ): Promise<HatenaJsonliteResponse | null> {
-    return apiGet<HatenaJsonliteResponse | null>("api/bookmarks", { url });
+    return apiGet<HatenaJsonliteResponse | null>("api/bookmarks", {
+        url,
+        source,
+    });
 }
 
 export function bookmarkEntryPageUrl(url: string): string {
