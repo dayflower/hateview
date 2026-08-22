@@ -5,6 +5,7 @@ import {
     useState,
 } from "react";
 import { useHideRules } from "../../lib/hooks/useHideRules.tsx";
+import { toSerialTitleGlob } from "../../lib/text/serialTitleGlob";
 
 interface HideRuleFormProps {
     /** When set, submitting edits this existing rule instead of adding a new one. */
@@ -34,6 +35,8 @@ const DESCRIPTION =
     "ドメインとタイトルの glob パターン(両方指定した場合は両方一致で非表示)。";
 const VALIDATION_MESSAGE =
     "ドメインまたはタイトルパターンのいずれかを入力してください。";
+const SERIALIZE_LABEL = "連載パターンにまとめる";
+const RESTORE_LABEL = "元のタイトルに戻す";
 
 export function HideRuleForm({
     ruleId,
@@ -53,7 +56,20 @@ export function HideRuleForm({
     const { addRule, updateRule } = useHideRules();
     const [domain, setDomain] = useState(initialDomain);
     const [titleGlob, setTitleGlob] = useState(initialTitleGlob);
+    /** Pre-generalization value, so the button can undo itself. */
+    const [titleBeforeSerialize, setTitleBeforeSerialize] = useState<
+        string | null
+    >(null);
     const [error, setError] = useState<string | null>(null);
+
+    const serialGlob = toSerialTitleGlob(titleGlob);
+    const canSerialize = serialGlob !== null && serialGlob !== titleGlob;
+
+    const handleTitleGlobChange = (value: string) => {
+        setTitleGlob(value);
+        // A hand edit makes the stashed original stale.
+        setTitleBeforeSerialize(null);
+    };
 
     const handleSubmit = (event: FormEvent) => {
         event.preventDefault();
@@ -75,6 +91,7 @@ export function HideRuleForm({
             addRule(input);
             setDomain("");
             setTitleGlob("");
+            setTitleBeforeSerialize(null);
         }
         setError(null);
         onSubmitted();
@@ -100,11 +117,32 @@ export function HideRuleForm({
                     <input
                         type="text"
                         value={titleGlob}
-                        onChange={(event) => setTitleGlob(event.target.value)}
+                        onChange={(event) =>
+                            handleTitleGlobChange(event.target.value)
+                        }
                         placeholder={titleGlobPlaceholder}
                         className={inputClassName}
                     />
                 </label>
+                {(canSerialize || titleBeforeSerialize !== null) && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (titleBeforeSerialize !== null) {
+                                setTitleGlob(titleBeforeSerialize);
+                                setTitleBeforeSerialize(null);
+                            } else if (serialGlob !== null) {
+                                setTitleBeforeSerialize(titleGlob);
+                                setTitleGlob(serialGlob);
+                            }
+                        }}
+                        className="self-start text-blue-600 text-sm hover:underline dark:text-blue-400"
+                    >
+                        {titleBeforeSerialize !== null
+                            ? RESTORE_LABEL
+                            : SERIALIZE_LABEL}
+                    </button>
+                )}
                 {error && <p className="text-red-600 text-sm">{error}</p>}
                 {footer}
             </form>
