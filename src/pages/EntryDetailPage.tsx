@@ -29,6 +29,7 @@ import {
     writeHideNoComment,
 } from "../lib/storage/hideNoComment";
 import { safeExternalUrl } from "../lib/url/externalUrl";
+import { goBack } from "../router/useHashRoute";
 
 const SORT_ORDER_OPTIONS: { id: BookmarkSortOrder; label: string }[] = [
     { id: "new", label: "新着順" },
@@ -118,7 +119,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
         <div className="mx-auto max-w-4xl p-4">
             <button
                 type="button"
-                onClick={() => window.history.back()}
+                onClick={goBack}
                 className="mb-2 inline-flex items-center gap-1 text-blue-700 text-sm hover:underline dark:text-blue-400"
             >
                 <ArrowLeft className="size-4" />
