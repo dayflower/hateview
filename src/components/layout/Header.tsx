@@ -1,5 +1,6 @@
-import { Bookmark, Home, RefreshCw, Settings } from "lucide-react";
+import { Bookmark, Eye, EyeOff, Home, RefreshCw, Settings } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
+import { useHideRead } from "../../lib/hooks/useHideRead.tsx";
 import type { Route } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import { IconButton } from "../common/IconButton";
@@ -27,6 +28,7 @@ export function Header({ route }: HeaderProps) {
         width: number;
     }>();
     const [reloading, setReloading] = useState(false);
+    const { hideRead, toggleHideRead } = useHideRead();
 
     /** Installed desktop PWA windows commonly have no browser-chrome reload
      *  control, so the app provides its own. `registration.update()` forces a
@@ -75,6 +77,19 @@ export function Header({ route }: HeaderProps) {
         return () => observer.disconnect();
     }, [route.name]);
 
+    /** Tapping the tab of the page you are already on scrolls back to the top
+     *  of it, the way the tab bars of native apps behave — which is why there
+     *  is no separate scroll-to-top control. */
+    const handleLinkClick = (linkRoute: Route["name"], path: string) => {
+        if (route.name === linkRoute) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+            navigate(path);
+        }
+    };
+
+    const hideReadLabel = hideRead ? "既読を表示する" : "既読を隠す";
+
     return (
         <header className="sticky top-0 z-20 border-gray-200 border-b bg-white dark:border-gray-800 dark:bg-gray-950">
             <nav
@@ -102,7 +117,7 @@ export function Header({ route }: HeaderProps) {
                             }
                         }}
                         type="button"
-                        onClick={() => navigate(path)}
+                        onClick={() => handleLinkClick(linkRoute, path)}
                         aria-label={label}
                         title={label}
                         aria-current={
@@ -118,16 +133,37 @@ export function Header({ route }: HeaderProps) {
                         <span className="hidden sm:inline">{label}</span>
                     </button>
                 ))}
-                <IconButton
-                    aria-label="再読み込み"
-                    className="ml-auto size-8"
-                    onClick={handleReload}
-                    disabled={reloading}
-                >
-                    <RefreshCw
-                        className={`size-4 ${reloading ? "animate-spin" : ""}`}
-                    />
-                </IconButton>
+                <div className="ml-auto flex items-center gap-1">
+                    {route.name === "list" && (
+                        <IconButton
+                            aria-label={hideReadLabel}
+                            title={hideReadLabel}
+                            aria-pressed={hideRead}
+                            className={`size-8 ${
+                                hideRead
+                                    ? "text-blue-600 dark:text-blue-400"
+                                    : ""
+                            }`}
+                            onClick={toggleHideRead}
+                        >
+                            {hideRead ? (
+                                <EyeOff className="size-4 animate-pop" />
+                            ) : (
+                                <Eye className="size-4 animate-pop" />
+                            )}
+                        </IconButton>
+                    )}
+                    <IconButton
+                        aria-label="再読み込み"
+                        className="size-8"
+                        onClick={handleReload}
+                        disabled={reloading}
+                    >
+                        <RefreshCw
+                            className={`size-4 ${reloading ? "animate-spin" : ""}`}
+                        />
+                    </IconButton>
+                </div>
             </nav>
         </header>
     );

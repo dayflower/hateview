@@ -6,9 +6,11 @@ import { CategoryFilterBar } from "../components/entry-list/CategoryFilterBar";
 import { EntryRow } from "../components/entry-list/EntryRow";
 import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useEntries } from "../lib/hooks/useEntries";
+import { useHideRead } from "../lib/hooks/useHideRead.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
 import { useOpenEntryDetail } from "../lib/hooks/useOpenEntryDetail";
+import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../lib/hooks/useRemovedEntries.tsx";
 import type { Entry } from "../types/entry";
 
@@ -33,6 +35,8 @@ export function EntryListPage() {
         useEntries(selectedCategory);
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
+    const { hideRead } = useHideRead();
+    const { isRead } = useReadTracking();
     const openDetail = useOpenEntryDetail();
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
@@ -74,15 +78,16 @@ export function EntryListPage() {
         };
     }, []);
 
-    // isHidden/isRemoved change identity whenever the underlying hide-rule or
-    // removed-entry state changes, so this memo correctly recomputes exactly
-    // when the visible set can change.
+    // isHidden/isRemoved/isRead change identity whenever the underlying
+    // hide-rule, removed-entry or read state changes, so this memo correctly
+    // recomputes exactly when the visible set can change.
     const visibleEntries = useMemo(
         () =>
             entries
                 .filter((entry) => !isHidden(entry))
-                .filter((entry) => !isRemoved(entry.url)),
-        [entries, isHidden, isRemoved],
+                .filter((entry) => !isRemoved(entry.url))
+                .filter((entry) => !hideRead || !isRead(entry.url)),
+        [entries, isHidden, isRemoved, hideRead, isRead],
     );
 
     useEffect(() => {

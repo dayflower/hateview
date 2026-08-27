@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import { BookmarkSourceProvider } from "./lib/hooks/useBookmarkSource.tsx";
 import { CategoryVisibilityProvider } from "./lib/hooks/useCategoryVisibility.tsx";
 import { DetailTargetProvider } from "./lib/hooks/useDetailTarget.tsx";
+import { HideReadProvider } from "./lib/hooks/useHideRead.tsx";
 import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadLaterProvider } from "./lib/hooks/useReadLater.tsx";
 import { ReadTrackingProvider } from "./lib/hooks/useReadTracking.tsx";
@@ -22,7 +23,9 @@ createRoot(document.getElementById("root")!).render(
                             <ReadLaterProvider>
                                 <RemovedEntriesProvider>
                                     <CategoryVisibilityProvider>
-                                        <App />
+                                        <HideReadProvider>
+                                            <App />
+                                        </HideReadProvider>
                                     </CategoryVisibilityProvider>
                                 </RemovedEntriesProvider>
                             </ReadLaterProvider>
