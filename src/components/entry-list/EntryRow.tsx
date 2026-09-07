@@ -11,6 +11,7 @@ import {
 import { type MouseEvent, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { toReadLaterSnapshot } from "../../lib/entry/readLaterSnapshot";
+import { useCardActivation } from "../../lib/hooks/useCardActivation";
 import { useConfirmAction } from "../../lib/hooks/useConfirmAction";
 import { useDropdownMenu } from "../../lib/hooks/useDropdownMenu";
 import { useOpenEntryDetail } from "../../lib/hooks/useOpenEntryDetail";
@@ -30,7 +31,6 @@ import { RelativeTime } from "../common/RelativeTime";
 const CONFIRM_TIMEOUT_MS = 3000;
 const SEEN_VISIBILITY_THRESHOLD = 0.5;
 const SEEN_DWELL_MS = 600;
-const DOUBLE_CLICK_GUARD_MS = 300;
 
 interface EntryRowProps {
     entry: Entry;
@@ -82,48 +82,10 @@ export function EntryRow({
         close: closeMenu,
     } = useDropdownMenu();
 
-    const pendingNavigateRef = useRef<ReturnType<typeof setTimeout> | null>(
-        null,
-    );
-
-    useEffect(() => {
-        return () => {
-            if (pendingNavigateRef.current) {
-                clearTimeout(pendingNavigateRef.current);
-            }
-        };
-    }, []);
-
-    // A click schedules the detail navigation after a short delay
-    // instead of firing it immediately, so that a dblclick landing shortly
-    // after (browsers always fire click, click, dblclick in that order) can
-    // still cancel it in favor of opening the original article.
-    const handleCardClick = () => {
-        if (wasDragged()) {
-            return;
-        }
-        if (pendingNavigateRef.current) {
-            clearTimeout(pendingNavigateRef.current);
-        }
-        pendingNavigateRef.current = setTimeout(() => {
-            pendingNavigateRef.current = null;
-            openDetail(entry.url);
-        }, DOUBLE_CLICK_GUARD_MS);
-    };
-
-    const handleCardDoubleClick = () => {
-        if (wasDragged()) {
-            return;
-        }
-        if (pendingNavigateRef.current) {
-            clearTimeout(pendingNavigateRef.current);
-            pendingNavigateRef.current = null;
-        }
-        const href = safeExternalUrl(entry.url);
-        if (href) {
-            window.open(href, "_blank", "noopener,noreferrer");
-        }
-    };
+    const {
+        handleClick: handleCardClick,
+        handleDoubleClick: handleCardDoubleClick,
+    } = useCardActivation({ url: entry.url, wasDragged });
 
     const stop = (event: MouseEvent) => event.stopPropagation();
 
