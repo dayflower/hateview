@@ -6,6 +6,7 @@ import {
     useMemo,
     useState,
 } from "react";
+import { readHideRead, writeHideRead } from "../storage/hideRead";
 
 interface HideReadContextValue {
     hideRead: boolean;
@@ -14,14 +15,22 @@ interface HideReadContextValue {
 
 const HideReadContext = createContext<HideReadContextValue | null>(null);
 
-/** Whether already-read entries are filtered out of the list. Unlike the other
- *  client-side state, this is deliberately kept in memory only: it is a
- *  momentary view filter, so it should start off again on a fresh load rather
- *  than silently keep hiding entries days later. */
+/** Whether already-read entries are filtered out of the list. Kept in
+ *  sessionStorage rather than localStorage: it should survive the app's own
+ *  reload button (and an ordinary browser reload, which uses the same tab)
+ *  so re-reading the feed doesn't silently unhide read entries, but it
+ *  should still start off again in a new tab rather than keep hiding entries
+ *  days later. */
 export function HideReadProvider({ children }: { children: ReactNode }) {
-    const [hideRead, setHideRead] = useState(false);
+    const [hideRead, setHideRead] = useState(readHideRead);
 
-    const toggleHideRead = useCallback(() => setHideRead((prev) => !prev), []);
+    const toggleHideRead = useCallback(() => {
+        setHideRead((prev) => {
+            const next = !prev;
+            writeHideRead(next);
+            return next;
+        });
+    }, []);
 
     const value = useMemo<HideReadContextValue>(
         () => ({ hideRead, toggleHideRead }),
