@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
+import { FaviconImg } from "../components/common/FaviconImg";
 import { HideRuleModal } from "../components/common/HideRuleModal";
 import { LoadingIndicator } from "../components/common/LoadingIndicator";
 import { PillTabBar } from "../components/common/PillTabBar";
@@ -135,9 +136,15 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                     {state.data.title}
                 </a>
             </h1>
-            <p className="mt-1 font-bold text-rose-500 text-sm dark:text-rose-400">
-                {state.data.count} users
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-bold text-rose-500 dark:text-rose-400">
+                    {state.data.count} users
+                </span>
+                <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                    <FaviconImg domain={domain} />
+                    {domain}
+                </span>
+            </div>
             {cachedEntry && (
                 <div className="mt-3 flex gap-3">
                     <Thumbnail src={cachedEntry.imageUrl} />
