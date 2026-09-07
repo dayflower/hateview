@@ -2,6 +2,7 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { CategoryBadge } from "../components/common/CategoryBadge";
 import { EntrySummary } from "../components/common/EntrySummary";
+import { FaviconImg } from "../components/common/FaviconImg";
 import { IconButton, iconButtonClass } from "../components/common/IconButton";
 import { useCardActivation } from "../lib/hooks/useCardActivation";
 import { useConfirmAction } from "../lib/hooks/useConfirmAction";
@@ -49,6 +50,7 @@ function ReadLaterRow({
     onRemove: () => void;
 }) {
     const openDetail = useOpenEntryDetail();
+    const domain = new URL(entry.url).hostname;
     const stop = (event: MouseEvent) => event.stopPropagation();
 
     const {
@@ -112,19 +114,22 @@ function ReadLaterRow({
                                     {entry.bookmarkCount} users
                                 </span>
                             )}
+                            <FaviconImg domain={domain} />
+                            <span>{domain}</span>
                             {entry.category && (
                                 <CategoryBadge category={entry.category} />
                             )}
                         </>
                     }
                 />
-                <div className="flex w-full justify-end gap-1 sm:w-auto">
+                <div className="flex w-full justify-end gap-1 sm:w-auto sm:flex-col">
                     <a
                         href={safeExternalUrl(entry.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="元記事を開く"
-                        className={iconButtonClass}
+                        title="元記事を開く"
+                        className={`${iconButtonClass} sm:size-9`}
                         onClick={stop}
                     >
                         <ExternalLink className="size-5" />
@@ -138,8 +143,8 @@ function ReadLaterRow({
                         }}
                         className={
                             confirmingDelete
-                                ? "!bg-red-500 !text-white hover:!bg-red-600"
-                                : ""
+                                ? "sm:size-9 !bg-red-500 !text-white hover:!bg-red-600"
+                                : "sm:size-9"
                         }
                     >
                         <Trash2 className="size-5" />
