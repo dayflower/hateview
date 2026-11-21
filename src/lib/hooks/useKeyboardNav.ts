@@ -10,7 +10,7 @@ const KEYMAP: Record<string, NavAction> = {
     Enter: "select",
 };
 
-function isTextEntryFocused(): boolean {
+export function isTextEntryFocused(): boolean {
     const el = document.activeElement;
     if (!(el instanceof HTMLElement)) {
         return false;

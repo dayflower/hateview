@@ -85,12 +85,16 @@ export function EntryRow({
     const {
         handleClick: handleCardClick,
         handleDoubleClick: handleCardDoubleClick,
-    } = useCardActivation({ url: entry.url, wasDragged });
+    } = useCardActivation({
+        url: entry.url,
+        title: entry.title,
+        wasDragged,
+    });
 
     const stop = (event: MouseEvent) => event.stopPropagation();
 
     const toggleRead = () =>
-        read ? markUnread(entry.url) : markRead(entry.url);
+        read ? markUnread(entry.url) : markRead(entry.url, entry.title);
 
     const handleTrashClick = (event: MouseEvent) => {
         stop(event);
@@ -187,7 +191,7 @@ export function EntryRow({
                     title={entry.title}
                     description={entry.description}
                     imageUrl={entry.imageUrl}
-                    onTitleClick={() => openDetail(entry.url)}
+                    onTitleClick={() => openDetail(entry.url, entry.title)}
                     metaRow={
                         <>
                             <span className="font-bold text-rose-500 dark:text-rose-400">

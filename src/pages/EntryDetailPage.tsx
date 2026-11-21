@@ -56,7 +56,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
 
     useEffect(() => {
         if (state.data) {
-            markRead(url);
+            markRead(url, state.data.title);
         }
     }, [state.data, url, markRead]);
 
