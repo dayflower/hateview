@@ -11,6 +11,15 @@ describe("safeExternalUrl", () => {
         );
     });
 
+    it("returns the normalized form of the url", () => {
+        expect(safeExternalUrl("HTTPS://Example.com")).toBe(
+            "https://example.com/",
+        );
+        expect(safeExternalUrl("https://example.com/日本")).toBe(
+            "https://example.com/%E6%97%A5%E6%9C%AC",
+        );
+    });
+
     it("rejects script-bearing schemes", () => {
         expect(safeExternalUrl("javascript:alert(1)")).toBeUndefined();
         expect(safeExternalUrl("JavaScript:alert(1)")).toBeUndefined();
