@@ -66,6 +66,7 @@ function ReadLaterRow({
 
     const { handleClick, handleDoubleClick } = useCardActivation({
         url: entry.url,
+        title: entry.title,
         wasDragged,
     });
 
@@ -106,7 +107,7 @@ function ReadLaterRow({
                     title={entry.title}
                     description={entry.description}
                     imageUrl={entry.imageUrl}
-                    onTitleClick={() => openDetail(entry.url)}
+                    onTitleClick={() => openDetail(entry.url, entry.title)}
                     metaRow={
                         <>
                             {entry.bookmarkCount !== undefined && (

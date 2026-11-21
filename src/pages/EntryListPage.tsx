@@ -12,6 +12,7 @@ import { useKeyboardNav } from "../lib/hooks/useKeyboardNav";
 import { useOpenEntryDetail } from "../lib/hooks/useOpenEntryDetail";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import { useRemovedEntries } from "../lib/hooks/useRemovedEntries.tsx";
+import { useUndoReadShortcut } from "../lib/hooks/useUndoReadShortcut";
 import type { Entry } from "../types/entry";
 
 /** Remembers the selected category and scroll position across mount/unmount
@@ -36,7 +37,7 @@ export function EntryListPage() {
     const { isHidden } = useHideRules();
     const { isRemoved } = useRemovedEntries();
     const { hideRead } = useHideRead();
-    const { isRead } = useReadTracking();
+    const { isRead, undoLastRead, lastRestored } = useReadTracking();
     const openDetail = useOpenEntryDetail();
     const [focusedIndex, setFocusedIndex] = useState(-1);
     const [hideModalEntry, setHideModalEntry] = useState<Entry | null>(null);
@@ -101,7 +102,7 @@ export function EntryListPage() {
     const handleSelect = (index: number) => {
         const entry = visibleEntries[index];
         if (entry) {
-            openDetail(entry.url);
+            openDetail(entry.url, entry.title);
         }
     };
 
@@ -111,6 +112,28 @@ export function EntryListPage() {
         onMove: setFocusedIndex,
         onSelect: handleSelect,
     });
+    useUndoReadShortcut(undoLastRead);
+
+    // After an undo puts an entry back in the list, bring it into view. The
+    // keyboard focus is deliberately left alone: its highlight ring on the
+    // restored row reads as noise. Seeded with the current seq so that an
+    // undo made before this page mounted isn't replayed on return.
+    const handledRestoreSeqRef = useRef(lastRestored?.seq);
+    useEffect(() => {
+        if (
+            !lastRestored ||
+            lastRestored.seq === handledRestoreSeqRef.current
+        ) {
+            return;
+        }
+        handledRestoreSeqRef.current = lastRestored.seq;
+        const index = visibleEntries.findIndex(
+            (entry) => entry.url === lastRestored.url,
+        );
+        if (index >= 0) {
+            itemRefs.current[index]?.scrollIntoView({ block: "nearest" });
+        }
+    }, [lastRestored, visibleEntries]);
 
     // The category bar stays mounted while a feed loads or fails, so that
     // switching categories doesn't make the tabs flicker in and out.

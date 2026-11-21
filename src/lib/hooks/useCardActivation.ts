@@ -6,6 +6,8 @@ const DOUBLE_CLICK_GUARD_MS = 300;
 
 interface UseCardActivationOptions {
     url: string;
+    /** Labels the undo entry if opening this card marks it read. */
+    title?: string;
     /** Skip activation, e.g. right after a swipe-to-delete drag released. */
     wasDragged?: () => boolean;
 }
@@ -25,6 +27,7 @@ interface UseCardActivationResult {
  */
 export function useCardActivation({
     url,
+    title,
     wasDragged,
 }: UseCardActivationOptions): UseCardActivationResult {
     const openDetail = useOpenEntryDetail();
@@ -49,7 +52,7 @@ export function useCardActivation({
         }
         pendingNavigateRef.current = setTimeout(() => {
             pendingNavigateRef.current = null;
-            openDetail(url);
+            openDetail(url, title);
         }, DOUBLE_CLICK_GUARD_MS);
     };
 

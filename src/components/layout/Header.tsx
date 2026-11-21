@@ -1,6 +1,15 @@
-import { Bookmark, Eye, EyeOff, Home, RefreshCw, Settings } from "lucide-react";
+import {
+    Bookmark,
+    Eye,
+    EyeOff,
+    Home,
+    RefreshCw,
+    Settings,
+    Undo2,
+} from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useHideRead } from "../../lib/hooks/useHideRead.tsx";
+import { useReadTracking } from "../../lib/hooks/useReadTracking.tsx";
 import type { Route } from "../../router/routes";
 import { navigate } from "../../router/useHashRoute";
 import { IconButton } from "../common/IconButton";
@@ -29,6 +38,7 @@ export function Header({ route }: HeaderProps) {
     }>();
     const [reloading, setReloading] = useState(false);
     const { hideRead, toggleHideRead } = useHideRead();
+    const { nextUndo, undoLastRead } = useReadTracking();
 
     /** Installed desktop PWA windows commonly have no browser-chrome reload
      *  control, so the app provides its own. `registration.update()` forces a
@@ -89,6 +99,11 @@ export function Header({ route }: HeaderProps) {
     };
 
     const hideReadLabel = hideRead ? "既読を表示する" : "既読を隠す";
+    const undoReadTitle = !nextUndo
+        ? "未読に戻せるエントリーはありません"
+        : nextUndo.title
+          ? `「${nextUndo.title}」を未読に戻す`
+          : "直前に既読にしたエントリーを未読に戻す";
 
     return (
         <header className="sticky top-0 z-20 border-gray-200 border-b bg-white dark:border-gray-800 dark:bg-gray-950">
@@ -134,6 +149,17 @@ export function Header({ route }: HeaderProps) {
                     </button>
                 ))}
                 <div className="ml-auto flex items-center gap-1">
+                    {route.name === "list" && (
+                        <IconButton
+                            aria-label="既読を元に戻す"
+                            title={undoReadTitle}
+                            className="size-8 disabled:cursor-default disabled:bg-transparent! disabled:opacity-40 disabled:scale-100!"
+                            onClick={undoLastRead}
+                            disabled={!nextUndo}
+                        >
+                            <Undo2 className="size-4" />
+                        </IconButton>
+                    )}
                     {route.name === "list" && (
                         <IconButton
                             aria-label={hideReadLabel}

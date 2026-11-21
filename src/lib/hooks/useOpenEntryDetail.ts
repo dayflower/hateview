@@ -12,12 +12,12 @@ import { useReadTracking } from "./useReadTracking.tsx";
  * detail-target setting is honoured identically from a row tap, a title
  * click and keyboard selection.
  */
-export function useOpenEntryDetail(): (url: string) => void {
+export function useOpenEntryDetail(): (url: string, title?: string) => void {
     const { detailTarget } = useDetailTarget();
     const { markRead } = useReadTracking();
 
     return useCallback(
-        (url: string) => {
+        (url: string, title?: string) => {
             if (detailTarget !== "official") {
                 navigate(entryPath(url));
                 return;
@@ -29,7 +29,7 @@ export function useOpenEntryDetail(): (url: string) => void {
             // The in-app detail page marks an entry read once its bookmarks
             // load; leaving for the official page never gets there, so mark
             // it here instead.
-            markRead(url);
+            markRead(url, title);
             navigateExternal(href);
         },
         [detailTarget, markRead],
