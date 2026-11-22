@@ -23,3 +23,11 @@ export const ALL_CATEGORIES: CategoryOption[] = [
 export const ALL_CATEGORY_IDS: FeedId[] = ALL_CATEGORIES.map(
     (category) => category.id,
 );
+
+const CATEGORY_LABELS = new Map<FeedId, string>(
+    ALL_CATEGORIES.map((category) => [category.id, category.label]),
+);
+
+export function categoryLabel(id: FeedId): string {
+    return CATEGORY_LABELS.get(id) ?? id;
+}
