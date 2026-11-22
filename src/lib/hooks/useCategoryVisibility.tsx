@@ -10,36 +10,69 @@ import type { FeedId } from "../../types/entry";
 import * as categoryVisibilityStore from "../storage/categoryVisibility";
 
 interface CategoryVisibilityContextValue {
+    /** Every category, hidden ones included, in the user's chosen order. */
+    orderedCategories: FeedId[];
+    /** Visible categories in the user's chosen order. */
     visibleCategories: FeedId[];
     isCategoryVisible: (id: FeedId) => boolean;
     setCategoryVisible: (id: FeedId, visible: boolean) => void;
+    setCategoryOrder: (order: FeedId[]) => void;
+    resetCategoryOrder: () => void;
 }
 
 const CategoryVisibilityContext =
     createContext<CategoryVisibilityContextValue | null>(null);
+
+function readState() {
+    return {
+        ordered: categoryVisibilityStore.listOrderedCategories(),
+        visible: categoryVisibilityStore.listVisibleCategories(),
+    };
+}
 
 export function CategoryVisibilityProvider({
     children,
 }: {
     children: ReactNode;
 }) {
-    const [visibleCategories, setVisibleCategories] = useState<FeedId[]>(() =>
-        categoryVisibilityStore.listVisibleCategories(),
-    );
+    const [state, setState] = useState(readState);
 
     const setCategoryVisible = useCallback((id: FeedId, visible: boolean) => {
         categoryVisibilityStore.setCategoryVisible(id, visible);
-        setVisibleCategories(categoryVisibilityStore.listVisibleCategories());
+        setState(readState());
+    }, []);
+
+    const setCategoryOrder = useCallback((order: FeedId[]) => {
+        categoryVisibilityStore.setCategoryOrder(order);
+        setState(readState());
+    }, []);
+
+    const resetCategoryOrder = useCallback(() => {
+        categoryVisibilityStore.resetCategoryOrder();
+        setState(readState());
     }, []);
 
     const isCategoryVisible = useCallback(
-        (id: FeedId) => visibleCategories.includes(id),
-        [visibleCategories],
+        (id: FeedId) => state.visible.includes(id),
+        [state.visible],
     );
 
     const value = useMemo<CategoryVisibilityContextValue>(
-        () => ({ visibleCategories, isCategoryVisible, setCategoryVisible }),
-        [visibleCategories, isCategoryVisible, setCategoryVisible],
+        () => ({
+            orderedCategories: state.ordered,
+            visibleCategories: state.visible,
+            isCategoryVisible,
+            setCategoryVisible,
+            setCategoryOrder,
+            resetCategoryOrder,
+        }),
+        [
+            state,
+            isCategoryVisible,
+            setCategoryVisible,
+            setCategoryOrder,
+            resetCategoryOrder,
+        ],
     );
 
     return (

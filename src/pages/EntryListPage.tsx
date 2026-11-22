@@ -26,8 +26,10 @@ export function EntryListPage() {
     const { visibleCategories, isCategoryVisible } = useCategoryVisibility();
     const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>(
         () => {
-            const preferred = savedListState?.category ?? "all";
-            return isCategoryVisible(preferred)
+            // Within a session, return to the tab last used; otherwise start
+            // on the leftmost tab of the user's chosen order.
+            const preferred = savedListState?.category;
+            return preferred !== undefined && isCategoryVisible(preferred)
                 ? preferred
                 : (visibleCategories[0] ?? "all");
         },

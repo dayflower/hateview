@@ -1,4 +1,4 @@
-import { ALL_CATEGORIES } from "../../lib/categories";
+import { categoryLabel } from "../../lib/categories";
 import { useCategoryVisibility } from "../../lib/hooks/useCategoryVisibility.tsx";
 import type { FeedId } from "../../types/entry";
 import { PillTabBar } from "../common/PillTabBar";
@@ -15,10 +15,10 @@ export function CategoryFilterBar({
     onSelect,
 }: CategoryFilterBarProps) {
     const { visibleCategories } = useCategoryVisibility();
-    const visibleSet = new Set(visibleCategories);
-    const options = ALL_CATEGORIES.filter((category) =>
-        visibleSet.has(category.id),
-    );
+    const options = visibleCategories.map((id) => ({
+        id,
+        label: categoryLabel(id),
+    }));
 
     return (
         <div className="flex justify-center">

@@ -3,9 +3,8 @@ import { useState } from "react";
 import { HideRuleForm } from "../components/common/HideRuleForm";
 import { HideRuleModal } from "../components/common/HideRuleModal";
 import { PillTabBar } from "../components/common/PillTabBar";
-import { ALL_CATEGORIES } from "../lib/categories";
+import { CategorySettingsList } from "../components/settings/CategorySettingsList";
 import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
-import { useCategoryVisibility } from "../lib/hooks/useCategoryVisibility.tsx";
 import { useDetailTarget } from "../lib/hooks/useDetailTarget.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
 import { useTheme } from "../lib/hooks/useTheme.tsx";
@@ -36,8 +35,6 @@ export function SettingsPage() {
     const { theme, setTheme } = useTheme();
     const { bookmarkSource, setBookmarkSource } = useBookmarkSource();
     const { detailTarget, setDetailTarget } = useDetailTarget();
-    const { visibleCategories, isCategoryVisible, setCategoryVisible } =
-        useCategoryVisibility();
     const [editingRule, setEditingRule] = useState<HideRule | null>(null);
 
     const selectedDetailView: DetailViewOption =
@@ -81,36 +78,9 @@ export function SettingsPage() {
 
             <h1 className="mt-8 font-semibold text-lg">表示カテゴリ設定</h1>
             <p className="mt-1 text-gray-500 text-sm">
-                エントリー一覧に表示するカテゴリを選択します。少なくとも1つは選択してください。
+                エントリー一覧に表示するカテゴリを選択します。少なくとも1つは選択してください。左端のつまみをドラッグすると並び順を変更できます。
             </p>
-            <ul className="mt-4">
-                {ALL_CATEGORIES.map((category) => {
-                    const checked = isCategoryVisible(category.id);
-                    const disabled = checked && visibleCategories.length <= 1;
-                    return (
-                        <li
-                            key={category.id}
-                            className="flex items-center border-gray-200 border-b py-2 text-sm dark:border-gray-800"
-                        >
-                            <label className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    disabled={disabled}
-                                    onChange={(event) =>
-                                        setCategoryVisible(
-                                            category.id,
-                                            event.target.checked,
-                                        )
-                                    }
-                                    className="size-4 rounded border-gray-300 dark:border-gray-700"
-                                />
-                                {category.label}
-                            </label>
-                        </li>
-                    );
-                })}
-            </ul>
+            <CategorySettingsList />
 
             <h1 className="mt-8 font-semibold text-lg">非表示フィルタ設定</h1>
             <HideRuleForm
