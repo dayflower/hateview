@@ -4,6 +4,7 @@ import { HideRuleForm } from "../components/common/HideRuleForm";
 import { HideRuleModal } from "../components/common/HideRuleModal";
 import { PillTabBar } from "../components/common/PillTabBar";
 import { CategorySettingsList } from "../components/settings/CategorySettingsList";
+import { HiddenUsersSettings } from "../components/settings/HiddenUsersSettings";
 import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
 import { useDetailTarget } from "../lib/hooks/useDetailTarget.tsx";
 import { useHideRules } from "../lib/hooks/useHideRules.tsx";
@@ -144,6 +145,9 @@ export function SettingsPage() {
                     </li>
                 ))}
             </ul>
+
+            <h1 className="mt-8 font-semibold text-lg">非表示ユーザー設定</h1>
+            <HiddenUsersSettings />
 
             {editingRule && (
                 <HideRuleModal

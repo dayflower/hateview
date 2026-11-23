@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import { BookmarkSourceProvider } from "./lib/hooks/useBookmarkSource.tsx";
 import { CategoryVisibilityProvider } from "./lib/hooks/useCategoryVisibility.tsx";
 import { DetailTargetProvider } from "./lib/hooks/useDetailTarget.tsx";
+import { HiddenUsersProvider } from "./lib/hooks/useHiddenUsers.tsx";
 import { HideReadProvider } from "./lib/hooks/useHideRead.tsx";
 import { HideRulesProvider } from "./lib/hooks/useHideRules.tsx";
 import { ReadLaterProvider } from "./lib/hooks/useReadLater.tsx";
@@ -20,15 +21,17 @@ createRoot(document.getElementById("root")!).render(
                 <DetailTargetProvider>
                     <ReadTrackingProvider>
                         <HideRulesProvider>
-                            <ReadLaterProvider>
-                                <RemovedEntriesProvider>
-                                    <CategoryVisibilityProvider>
-                                        <HideReadProvider>
-                                            <App />
-                                        </HideReadProvider>
-                                    </CategoryVisibilityProvider>
-                                </RemovedEntriesProvider>
-                            </ReadLaterProvider>
+                            <HiddenUsersProvider>
+                                <ReadLaterProvider>
+                                    <RemovedEntriesProvider>
+                                        <CategoryVisibilityProvider>
+                                            <HideReadProvider>
+                                                <App />
+                                            </HideReadProvider>
+                                        </CategoryVisibilityProvider>
+                                    </RemovedEntriesProvider>
+                                </ReadLaterProvider>
+                            </HiddenUsersProvider>
                         </HideRulesProvider>
                     </ReadTrackingProvider>
                 </DetailTargetProvider>
