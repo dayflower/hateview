@@ -107,6 +107,9 @@ in `src/main.tsx`:
 
 - `useHideRules` / `storage/hideRules.ts` — domain + title-glob rules for
   hiding entries
+- `useHiddenUsers` / `storage/hiddenUsers.ts` — bookmarkers (Hatena IDs,
+  matched exactly / case-sensitively) whose bookmarks are left out of the
+  detail page's comment list
 - `useDetailTarget` / `storage/detailTarget.ts` — whether opening an entry
   goes to the app's own detail page or straight to Hatena's bookmark entry
   page (the settings UI presents this on one axis with the bookmark source)

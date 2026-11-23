@@ -23,6 +23,7 @@ import { toReadLaterSnapshot } from "../lib/entry/readLaterSnapshot";
 import { useAsyncData } from "../lib/hooks/useAsyncData";
 import { useBookmarkSource } from "../lib/hooks/useBookmarkSource.tsx";
 import { findCachedEntry } from "../lib/hooks/useEntries";
+import { useHiddenUsers } from "../lib/hooks/useHiddenUsers.tsx";
 import { useReadLater } from "../lib/hooks/useReadLater.tsx";
 import { useReadTracking } from "../lib/hooks/useReadTracking.tsx";
 import {
@@ -45,6 +46,7 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const { markRead } = useReadTracking();
     const { isMarked, toggle } = useReadLater();
     const { bookmarkSource } = useBookmarkSource();
+    const { isUserHidden } = useHiddenUsers();
     const state = useAsyncData(
         () => fetchEntryBookmarks(url, bookmarkSource),
         [url, bookmarkSource],
@@ -52,6 +54,9 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     const [hideNoComment, setHideNoComment] = useState(readHideNoComment);
     const [sortOrder, setSortOrder] = useState<BookmarkSortOrder>("star");
     const [hideModalOpen, setHideModalOpen] = useState(false);
+    // Deliberately not persisted: a peek at hidden users' comments on this
+    // entry only.
+    const [showHiddenUsers, setShowHiddenUsers] = useState(false);
     const [stars, setStars] = useState<Record<string, number> | null>(null);
 
     useEffect(() => {
@@ -66,6 +71,11 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     useEffect(() => {
         setStars(null);
     }, [url, bookmarkSource]);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: url is a reset trigger, not a value the effect body reads
+    useEffect(() => {
+        setShowHiddenUsers(false);
+    }, [url]);
 
     useEffect(() => {
         // Star counts are only needed for the "star" sort order, and
@@ -110,11 +120,14 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
     // image, so fall back to the list API's data for this URL, if it was
     // already fetched this session (e.g. via the entry list).
     const cachedEntry = findCachedEntry(url);
-    const bookmarks = hideNoComment
-        ? state.data.bookmarks.filter(
-              (bookmark) => bookmark.comment.trim() !== "",
-          )
-        : state.data.bookmarks;
+    const hiddenUserCount = state.data.bookmarks.filter((bookmark) =>
+        isUserHidden(bookmark.user),
+    ).length;
+    const bookmarks = state.data.bookmarks.filter(
+        (bookmark) =>
+            (showHiddenUsers || !isUserHidden(bookmark.user)) &&
+            (!hideNoComment || bookmark.comment.trim() !== ""),
+    );
 
     return (
         <div className="mx-auto max-w-4xl p-4">
@@ -140,6 +153,11 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 <span className="font-bold text-rose-500 dark:text-rose-400">
                     {state.data.count} users
                 </span>
+                {hiddenUserCount > 0 && (
+                    <span className="text-gray-500 dark:text-gray-400">
+                        （{hiddenUserCount}件非表示中）
+                    </span>
+                )}
                 <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                     <FaviconImg domain={domain} />
                     {domain}
@@ -231,6 +249,21 @@ export function EntryDetailPage({ url }: EntryDetailPageProps) {
                 </span>
                 コメントのない人を隠す
             </label>
+            {hiddenUserCount > 0 && (
+                <label className="mt-2 flex w-fit items-center gap-1.5 text-gray-700 text-sm dark:text-gray-300">
+                    <span className="-m-1 rounded p-1 transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/60">
+                        <input
+                            type="checkbox"
+                            checked={showHiddenUsers}
+                            onChange={(event) =>
+                                setShowHiddenUsers(event.target.checked)
+                            }
+                            className="block size-4 cursor-pointer accent-blue-600 transition-transform duration-150 active:scale-90"
+                        />
+                    </span>
+                    非表示ユーザーのコメントも表示
+                </label>
+            )}
             <div className="mt-3">
                 <PillTabBar
                     options={SORT_ORDER_OPTIONS}

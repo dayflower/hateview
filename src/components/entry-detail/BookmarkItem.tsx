@@ -1,8 +1,12 @@
-import { Star } from "lucide-react";
+import { Eye, EyeOff, Star } from "lucide-react";
+import { useConfirmAction } from "../../lib/hooks/useConfirmAction";
+import { useHiddenUsers } from "../../lib/hooks/useHiddenUsers.tsx";
 import type { HatenaBookmark } from "../../types/bookmark";
 import { LinkifiedText } from "../common/LinkifiedText";
 import { RelativeTime } from "../common/RelativeTime";
 import { UserAvatar } from "../common/UserAvatar";
+
+const CONFIRM_TIMEOUT_MS = 3000;
 
 interface BookmarkItemProps {
     bookmark: HatenaBookmark;
@@ -10,8 +14,19 @@ interface BookmarkItemProps {
 }
 
 export function BookmarkItem({ bookmark, starCount }: BookmarkItemProps) {
+    const { isUserHidden, addHiddenUser, removeHiddenUser } = useHiddenUsers();
+    const hidden = isUserHidden(bookmark.user);
+    const { confirming, trigger } = useConfirmAction(
+        () => addHiddenUser(bookmark.user),
+        CONFIRM_TIMEOUT_MS,
+    );
+
     return (
-        <li className="flex gap-2 border-gray-200 border-b py-3 dark:border-gray-800">
+        <li
+            className={`flex gap-2 border-gray-200 border-b py-3 dark:border-gray-800 ${
+                hidden ? "opacity-50" : ""
+            }`}
+        >
             <UserAvatar user={bookmark.user} />
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -26,6 +41,34 @@ export function BookmarkItem({ bookmark, starCount }: BookmarkItemProps) {
                             <Star className="size-3 fill-current" />
                             {starCount}
                         </span>
+                    )}
+                    {hidden ? (
+                        <button
+                            type="button"
+                            onClick={() => removeHiddenUser(bookmark.user)}
+                            className="ml-auto inline-flex items-center gap-0.5 self-center text-gray-500 text-xs hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+                        >
+                            <Eye className="size-3.5" />
+                            非表示を解除
+                        </button>
+                    ) : (
+                        <button
+                            type="button"
+                            aria-label={
+                                confirming
+                                    ? "もう一度クリックしてこのユーザーを非表示"
+                                    : "このユーザーを非表示"
+                            }
+                            onClick={trigger}
+                            className={`ml-auto inline-flex items-center gap-0.5 self-center text-xs ${
+                                confirming
+                                    ? "text-red-600 dark:text-red-400"
+                                    : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                            }`}
+                        >
+                            <EyeOff className="size-3.5" />
+                            {confirming && "もう一度押すと非表示"}
+                        </button>
                     )}
                 </div>
                 {bookmark.comment && (
